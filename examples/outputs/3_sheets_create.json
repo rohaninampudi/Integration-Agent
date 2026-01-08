@@ -1,0 +1,66 @@
+{
+  "test_case_id": 3,
+  "scenario": "Create a spreadsheet with scraped product data",
+  "description": "Array loop scenario - demonstrates Liquid for loops, multiple data types (string, number, boolean), and complex nested structures",
+  
+  "input": {
+    "user_request": "Create a spreadsheet with my scraped product data",
+    "workflow_variables": {
+      "scraper_results": [
+        {
+          "name": "Sony WH-1000XM5 Wireless Headphones",
+          "price": 349.99,
+          "url": "https://store.example.com/p/sony-wh1000xm5",
+          "in_stock": true,
+          "rating": 4.8
+        },
+        {
+          "name": "Apple AirPods Pro (2nd Gen)",
+          "price": 249.00,
+          "url": "https://store.example.com/p/airpods-pro-2",
+          "in_stock": true,
+          "rating": 4.7
+        },
+        {
+          "name": "Bose QuietComfort Ultra",
+          "price": 429.00,
+          "url": "https://store.example.com/p/bose-qc-ultra",
+          "in_stock": false,
+          "rating": 4.6
+        },
+        {
+          "name": "Samsung Galaxy Buds2 Pro",
+          "price": 179.99,
+          "url": "https://store.example.com/p/galaxy-buds2-pro",
+          "in_stock": true,
+          "rating": 4.5
+        }
+      ],
+      "summary": "Found 4 products. Average price: $301.99. 3 in stock, 1 out of stock.",
+      "scrape_date": "2026-01-08"
+    }
+  },
+  
+  "agent_output": {
+    "selected_action": "google_sheets_create",
+    "reasoning": "The user asked to create a new spreadsheet and no spreadsheet_id is provided, so google_sheets_create (spreadsheets.create) is appropriate. The config uses the Sheets API create payload with a header row and iterates over scraper_results to populate rows. Numeric fields (price, rating) use numberValue, booleans use boolValue, and strings use stringValue. The spreadsheet title includes the scrape_date, and a second 'Summary' sheet stores the run summary.",
+    "proposed_config": "{ \"properties\": { \"title\": \"Scraped Products - {{ scrape_date }}\" }, \"sheets\": [ { \"properties\": { \"title\": \"Products\" }, \"data\": [ { \"rowData\": [ { \"values\": [ { \"userEnteredValue\": { \"stringValue\": \"Name\" } }, { \"userEnteredValue\": { \"stringValue\": \"Price\" } }, { \"userEnteredValue\": { \"stringValue\": \"Rating\" } }, { \"userEnteredValue\": { \"stringValue\": \"In Stock\" } }, { \"userEnteredValue\": { \"stringValue\": \"URL\" } } ] }{% for product in scraper_results %}, { \"values\": [ { \"userEnteredValue\": { \"stringValue\": \"{{ product.name }}\" } }, { \"userEnteredValue\": { \"numberValue\": {{ product.price }} } }, { \"userEnteredValue\": { \"numberValue\": {{ product.rating }} } }, { \"userEnteredValue\": { \"boolValue\": {{ product.in_stock }} } }, { \"userEnteredValue\": { \"stringValue\": \"{{ product.url }}\" } } ] }{% endfor %} ] } ] }, { \"properties\": { \"title\": \"Summary\" }, \"data\": [ { \"rowData\": [ { \"values\": [ { \"userEnteredValue\": { \"stringValue\": \"Summary\" } }, { \"userEnteredValue\": { \"stringValue\": \"{{ summary }}\" } } ] } ] } ] } ] }"
+  },
+  
+  "validation": {
+    "action_correct": true,
+    "liquid_valid": true,
+    "renders_to_json": true,
+    "expected_action": "google_sheets_create"
+  },
+  
+  "liquid_patterns_demonstrated": [
+    "{% for product in scraper_results %}...{% endfor %} - Loop over array",
+    "{{ product.name }} - Access object properties",
+    "{{ product.price }} - Number values (no quotes)",
+    "{{ product.in_stock }} - Boolean values",
+    "Multiple data types in single template"
+  ],
+  
+  "note": "This demonstrates the most complex Liquid pattern - looping over an array of objects with mixed data types (strings, numbers, booleans) and generating valid Google Sheets API payload structure."
+}

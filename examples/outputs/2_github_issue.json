@@ -1,0 +1,35 @@
+{
+  "test_case_id": 2,
+  "scenario": "Create a GitHub issue for the failed scrape",
+  "description": "Error handling scenario - demonstrates string interpolation and structured Markdown formatting",
+  
+  "input": {
+    "user_request": "Create a GitHub issue for the failed scrape",
+    "workflow_variables": {
+      "job_id": "scrape_20260108_102345",
+      "error_code": "TIMEOUT",
+      "target_url": "https://store.example.com/products",
+      "summary": "Scrape failed: Connection timeout after 30s. URL: https://store.example.com",
+      "error_details": "TimeoutError: Request exceeded 30000ms limit. Connection dropped during HTML parse phase."
+    }
+  },
+  
+  "agent_output": {
+    "selected_action": "github_create_issue",
+    "reasoning": "The user wants to create a GitHub issue to track a failed scrape. The 'github_create_issue' action matches this need. After reviewing the API docs, the payload requires a title and optionally supports a Markdown body plus labels. I used the provided variables (job_id, error_code, target_url, summary, error_details) to compose an informative title and structured Markdown body, and added helpful labels.",
+    "proposed_config": "{ \"title\": \"[{{ error_code }}] Scrape Failed - {{ job_id }}\", \"body\": \"## Summary\\n\\n{{ summary }}\\n\\n## Error Details\\n\\n```\\n{{ error_details }}\\n```\\n\\n## Context\\n\\n- **Job ID**: {{ job_id }}\\n- **Target URL**: {{ target_url }}\\n- **Error Code**: {{ error_code }}\\n\\n---\\n*This issue was automatically created by the Integration Agent.*\", \"labels\": [\"bug\", \"automated\", \"scraper\"] }"
+  },
+  
+  "validation": {
+    "action_correct": true,
+    "liquid_valid": true,
+    "renders_to_json": true,
+    "expected_action": "github_create_issue"
+  },
+  
+  "rendered_example": {
+    "title": "[TIMEOUT] Scrape Failed - scrape_20260108_102345",
+    "body": "## Summary\n\nScrape failed: Connection timeout after 30s. URL: https://store.example.com\n\n## Error Details\n\n```\nTimeoutError: Request exceeded 30000ms limit. Connection dropped during HTML parse phase.\n```\n\n## Context\n\n- **Job ID**: scrape_20260108_102345\n- **Target URL**: https://store.example.com/products\n- **Error Code**: TIMEOUT\n\n---\n*This issue was automatically created by the Integration Agent.*",
+    "labels": ["bug", "automated", "scraper"]
+  }
+}

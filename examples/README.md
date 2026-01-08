@@ -2,6 +2,8 @@
 
 This directory contains example workflow context files for testing and demoing the Integration Agent.
 
+**📊 See [`outputs/`](outputs/) for actual agent responses to these examples.**
+
 ## Quick Start
 
 Run any example with the CLI:

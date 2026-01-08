@@ -1,0 +1,55 @@
+{
+  "test_case_id": 4,
+  "scenario": "Add these results to the existing spreadsheet",
+  "description": "Action discrimination test - agent must choose 'append' over 'create' based on presence of spreadsheet_id",
+  
+  "input": {
+    "user_request": "Add these results to the existing spreadsheet",
+    "workflow_variables": {
+      "scraper_results": [
+        {
+          "name": "Wireless Mouse",
+          "price": 29.99,
+          "url": "https://store.example.com/p/mouse-001"
+        },
+        {
+          "name": "USB-C Cable",
+          "price": 12.99,
+          "url": "https://store.example.com/p/cable-usbc"
+        }
+      ],
+      "spreadsheet_id": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      "sheet_name": "Products"
+    }
+  },
+  
+  "agent_output": {
+    "selected_action": "google_sheets_append",
+    "reasoning": "The user wants to append results to an existing Google Sheet. The 'google_sheets_append' action is correct for adding rows to an existing spreadsheet, and we have the required 'spreadsheet_id'. The range is dynamically targeted using the provided 'sheet_name', and the values are a 2D array constructed by looping over 'scraper_results', matching the API's expected structure.",
+    "proposed_config": "{ \"spreadsheetId\": \"{{ spreadsheet_id }}\", \"range\": \"{{ sheet_name }}!A:C\", \"valueInputOption\": \"USER_ENTERED\", \"values\": [{% for product in scraper_results %}[\"{{ product.name }}\", {{ product.price }}, \"{{ product.url }}\"]{% unless forloop.last %}, {% endunless %}{% endfor %}] }"
+  },
+  
+  "validation": {
+    "action_correct": true,
+    "liquid_valid": true,
+    "renders_to_json": true,
+    "expected_action": "google_sheets_append",
+    "notes": "Critical test: Agent correctly chose 'append' over 'create' due to presence of spreadsheet_id variable"
+  },
+  
+  "liquid_patterns_demonstrated": [
+    "{% unless forloop.last %}, {% endunless %} - Properly handle JSON array commas",
+    "Dynamic range targeting with {{ sheet_name }}",
+    "2D array construction for spreadsheet values"
+  ],
+  
+  "rendered_example": {
+    "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+    "range": "Products!A:C",
+    "valueInputOption": "USER_ENTERED",
+    "values": [
+      ["Wireless Mouse", 29.99, "https://store.example.com/p/mouse-001"],
+      ["USB-C Cable", 12.99, "https://store.example.com/p/cable-usbc"]
+    ]
+  }
+}

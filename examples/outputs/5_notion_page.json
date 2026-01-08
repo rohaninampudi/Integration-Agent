@@ -1,0 +1,125 @@
+{
+  "test_case_id": 5,
+  "scenario": "Add these products to my Notion database",
+  "description": "Complex nested structures - demonstrates Notion's rich property types and array of pages pattern",
+  
+  "input": {
+    "user_request": "Add these products to my Notion database",
+    "workflow_variables": {
+      "scraper_results": [
+        {
+          "name": "Sony WH-1000XM5",
+          "brand": "Sony",
+          "category": "Headphones",
+          "price": 349.99,
+          "url": "https://store.example.com/p/sony-wh1000xm5"
+        },
+        {
+          "name": "Apple AirPods Pro",
+          "brand": "Apple",
+          "category": "Earbuds",
+          "price": 249.00,
+          "url": "https://store.example.com/p/airpods-pro-2"
+        }
+      ],
+      "notion_database_id": "8a3b1c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"
+    }
+  },
+  
+  "agent_output": {
+    "selected_action": "notion_create_page",
+    "reasoning": "The user wants to add multiple products as entries in a Notion database. The 'notion_create_page' action is correct because it creates pages in a specified database using a database_id, which is provided. Using the Notion API structure from the docs, each product maps to a page with properties: Name (title), Brand (rich_text), Category (select), Price (number), and URL (url). A Liquid loop generates one valid Notion page payload per product, producing a JSON array of requests for the runner to process.",
+    "proposed_config": "[{% for product in scraper_results %}{ \"parent\": { \"database_id\": \"{{ notion_database_id }}\" }, \"properties\": { \"Name\": { \"title\": [ { \"text\": { \"content\": \"{{ product.name }}\" } } ] }, \"Brand\": { \"rich_text\": [ { \"text\": { \"content\": \"{{ product.brand }}\" } } ] }, \"Category\": { \"select\": { \"name\": \"{{ product.category }}\" } }, \"Price\": { \"number\": {{ product.price }} }, \"URL\": { \"url\": \"{{ product.url }}\" } } }{% unless forloop.last %}, {% endunless %}{% endfor %}]"
+  },
+  
+  "validation": {
+    "action_correct": true,
+    "liquid_valid": true,
+    "renders_to_json": true,
+    "expected_action": "notion_create_page"
+  },
+  
+  "liquid_patterns_demonstrated": [
+    "Array of complete objects pattern",
+    "Multiple Notion property types (title, rich_text, select, number, url)",
+    "Nested object structures",
+    "{% unless forloop.last %}, {% endunless %} for JSON array commas"
+  ],
+  
+  "rendered_example": [
+    {
+      "parent": {
+        "database_id": "8a3b1c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"
+      },
+      "properties": {
+        "Name": {
+          "title": [
+            {
+              "text": {
+                "content": "Sony WH-1000XM5"
+              }
+            }
+          ]
+        },
+        "Brand": {
+          "rich_text": [
+            {
+              "text": {
+                "content": "Sony"
+              }
+            }
+          ]
+        },
+        "Category": {
+          "select": {
+            "name": "Headphones"
+          }
+        },
+        "Price": {
+          "number": 349.99
+        },
+        "URL": {
+          "url": "https://store.example.com/p/sony-wh1000xm5"
+        }
+      }
+    },
+    {
+      "parent": {
+        "database_id": "8a3b1c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"
+      },
+      "properties": {
+        "Name": {
+          "title": [
+            {
+              "text": {
+                "content": "Apple AirPods Pro"
+              }
+            }
+          ]
+        },
+        "Brand": {
+          "rich_text": [
+            {
+              "text": {
+                "content": "Apple"
+              }
+            }
+          ]
+        },
+        "Category": {
+          "select": {
+            "name": "Earbuds"
+          }
+        },
+        "Price": {
+          "number": 249.00
+        },
+        "URL": {
+          "url": "https://store.example.com/p/airpods-pro-2"
+        }
+      }
+    }
+  ],
+  
+  "note": "This demonstrates generating multiple Notion pages in a single request, each with complex nested property structures following Notion's API schema."
+}

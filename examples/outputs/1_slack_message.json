@@ -1,0 +1,32 @@
+{
+  "test_case_id": 1,
+  "scenario": "Post the summary to Slack",
+  "description": "Simple variable interpolation - demonstrates basic Liquid template syntax for string variables",
+  
+  "input": {
+    "user_request": "Post the summary to Slack",
+    "workflow_variables": {
+      "summary": "🎉 Daily scrape completed successfully!\n\nResults:\n- 47 new products found\n- 12 price changes detected\n- 3 out-of-stock items restocked\n\nAverage price: $89.50\nTotal value tracked: $4,206.50",
+      "slack_channel": "#product-alerts",
+      "timestamp": "2026-01-08T10:30:00Z"
+    }
+  },
+  
+  "agent_output": {
+    "selected_action": "slack_post_message",
+    "reasoning": "The user wants to post a message to Slack. The 'slack_post_message' action (Slack Web API chat.postMessage) is appropriate. We use the provided variables: 'slack_channel' for the target channel and 'summary' for the message text. The Liquid 'json' filter ensures the rendered values are safely JSON-escaped.",
+    "proposed_config": "{ \"channel\": {{ slack_channel | json }}, \"text\": {{ summary | json }} }"
+  },
+  
+  "validation": {
+    "action_correct": true,
+    "liquid_valid": true,
+    "renders_to_json": true,
+    "expected_action": "slack_post_message"
+  },
+  
+  "rendered_example": {
+    "channel": "#product-alerts",
+    "text": "🎉 Daily scrape completed successfully!\n\nResults:\n- 47 new products found\n- 12 price changes detected\n- 3 out-of-stock items restocked\n\nAverage price: $89.50\nTotal value tracked: $4,206.50"
+  }
+}
