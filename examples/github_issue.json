@@ -1,0 +1,11 @@
+{
+  "description": "Create a GitHub issue for a failed scrape job",
+  "example_request": "Create a GitHub issue for the failed scrape",
+  "variables": {
+    "summary": "Scrape job failed with error: Connection timeout after 30 seconds.\n\nAffected URL: https://store.example.com/products\nJob ID: scrape-20260108-001\nStarted: 2026-01-08T09:00:00Z\nFailed: 2026-01-08T09:00:30Z\n\nThis is the 3rd consecutive failure for this target.",
+    "error_code": "ETIMEDOUT",
+    "error_details": "TimeoutError: Request exceeded 30000ms timeout\n    at ClientRequest.<anonymous> (/app/scraper.js:145:23)\n    at Object.onceWrapper (events.js:421:28)",
+    "job_id": "scrape-20260108-001",
+    "target_url": "https://store.example.com/products"
+  }
+}

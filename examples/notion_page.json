@@ -1,0 +1,31 @@
+{
+  "description": "Create Notion pages for scraped products",
+  "example_request": "Add these products to my Notion database",
+  "variables": {
+    "scraper_results": [
+      {
+        "name": "MacBook Pro 16-inch M3 Max",
+        "price": 3499.00,
+        "url": "https://store.example.com/p/macbook-pro-16-m3",
+        "category": "Laptops",
+        "brand": "Apple"
+      },
+      {
+        "name": "Dell XPS 15",
+        "price": 1899.00,
+        "url": "https://store.example.com/p/dell-xps-15",
+        "category": "Laptops",
+        "brand": "Dell"
+      },
+      {
+        "name": "ThinkPad X1 Carbon Gen 11",
+        "price": 2149.00,
+        "url": "https://store.example.com/p/thinkpad-x1-carbon",
+        "category": "Laptops",
+        "brand": "Lenovo"
+      }
+    ],
+    "notion_database_id": "8a3b1c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+    "summary": "Found 3 premium laptops. Price range: $1,899 - $3,499"
+  }
+}

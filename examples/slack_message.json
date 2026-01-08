@@ -1,0 +1,9 @@
+{
+  "description": "Post a summary to Slack channel",
+  "example_request": "Post the summary to Slack",
+  "variables": {
+    "summary": "🎉 Daily scrape completed successfully!\n\nResults:\n- 47 new products found\n- 12 price changes detected\n- 3 out-of-stock items restocked\n\nAverage price: $89.50\nTotal value tracked: $4,206.50",
+    "slack_channel": "#product-alerts",
+    "timestamp": "2026-01-08T10:30:00Z"
+  }
+}

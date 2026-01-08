@@ -1,0 +1,20 @@
+{
+  "description": "Append new results to an existing Google Spreadsheet",
+  "example_request": "Add these results to the existing spreadsheet",
+  "variables": {
+    "scraper_results": [
+      {
+        "name": "Logitech MX Master 3S",
+        "price": 99.99,
+        "url": "https://store.example.com/p/mx-master-3s"
+      },
+      {
+        "name": "Razer DeathAdder V3",
+        "price": 89.99,
+        "url": "https://store.example.com/p/deathadder-v3"
+      }
+    ],
+    "spreadsheet_id": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+    "sheet_name": "Products"
+  }
+}

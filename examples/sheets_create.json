@@ -1,0 +1,38 @@
+{
+  "description": "Create a new Google Spreadsheet with scraped product data",
+  "example_request": "Create a spreadsheet with my scraped product data",
+  "variables": {
+    "scraper_results": [
+      {
+        "name": "Sony WH-1000XM5 Wireless Headphones",
+        "price": 349.99,
+        "url": "https://store.example.com/p/sony-wh1000xm5",
+        "in_stock": true,
+        "rating": 4.8
+      },
+      {
+        "name": "Apple AirPods Pro (2nd Gen)",
+        "price": 249.00,
+        "url": "https://store.example.com/p/airpods-pro-2",
+        "in_stock": true,
+        "rating": 4.7
+      },
+      {
+        "name": "Bose QuietComfort Ultra",
+        "price": 429.00,
+        "url": "https://store.example.com/p/bose-qc-ultra",
+        "in_stock": false,
+        "rating": 4.6
+      },
+      {
+        "name": "Samsung Galaxy Buds2 Pro",
+        "price": 179.99,
+        "url": "https://store.example.com/p/galaxy-buds2-pro",
+        "in_stock": true,
+        "rating": 4.5
+      }
+    ],
+    "summary": "Found 4 products. Average price: $301.99. 3 in stock, 1 out of stock.",
+    "scrape_date": "2026-01-08"
+  }
+}

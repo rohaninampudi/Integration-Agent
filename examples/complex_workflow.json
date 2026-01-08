@@ -1,0 +1,49 @@
+{
+  "description": "Complex workflow with rich data - good for testing different scenarios",
+  "example_requests": [
+    "Create a spreadsheet with the product data",
+    "Post the summary to Slack",
+    "Create a GitHub issue for the errors",
+    "Add these products to my Notion database"
+  ],
+  "variables": {
+    "scraper_results": [
+      {
+        "name": "Wireless Ergonomic Keyboard",
+        "price": 129.99,
+        "url": "https://store.example.com/p/ergo-keyboard",
+        "sku": "KB-ERG-001",
+        "category": "Peripherals",
+        "in_stock": true
+      },
+      {
+        "name": "USB-C Docking Station",
+        "price": 249.99,
+        "url": "https://store.example.com/p/usbc-dock",
+        "sku": "DOCK-USB-002",
+        "category": "Accessories",
+        "in_stock": true
+      },
+      {
+        "name": "4K Webcam with Ring Light",
+        "price": 179.99,
+        "url": "https://store.example.com/p/4k-webcam",
+        "sku": "CAM-4K-003",
+        "category": "Video",
+        "in_stock": false
+      }
+    ],
+    "summary": "Scrape completed: 3 products found, 2 in stock, 1 unavailable. Total value: $559.97",
+    "errors": [
+      {
+        "url": "https://store.example.com/p/discontinued-item",
+        "error": "404 Not Found"
+      }
+    ],
+    "slack_channel": "#ecommerce-alerts",
+    "spreadsheet_id": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+    "notion_database_id": "8a3b1c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+    "target_email": "team@company.com",
+    "run_timestamp": "2026-01-08T14:30:00Z"
+  }
+}
