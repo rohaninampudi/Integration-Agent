@@ -8,14 +8,15 @@ This module implements the core Integration Agent that:
 """
 
 import json
+import time
 from typing import Optional
 
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
 from langgraph.prebuilt import create_react_agent
 
 from src.config import OPENAI_API_KEY, OPENAI_MODEL, AGENT_VERBOSE, validate_config
-from src.models import AgentResponse, WorkflowContext
+from src.models import AgentResponse, WorkflowContext, AgentTrace, ThoughtStep, ToolCall
 from src.prompt_loader import load_system_prompt, load_user_request_prompt
 from tools import AGENT_TOOLS
 
@@ -169,6 +170,167 @@ class IntegrationAgent:
         
         return None
     
+    def _extract_trace(self, messages: list, total_duration_ms: float) -> AgentTrace:
+        """Extract execution trace from LangGraph messages.
+        
+        This parses the message history to reconstruct the agent's
+        reasoning process, tool calls, and observations.
+        
+        Args:
+            messages: List of messages from the agent execution
+            total_duration_ms: Total execution time
+            
+        Returns:
+            AgentTrace with steps and tool calls
+        """
+        trace = AgentTrace(
+            total_duration_ms=total_duration_ms,
+            model_name=self.model_name
+        )
+        
+        steps = []
+        tool_calls_list = []
+        step_number = 1
+        current_thought = None
+        
+        # Track tool calls by ID for matching with tool messages
+        pending_tool_calls = {}
+        
+        for msg in messages:
+            # Skip system and human messages (they're the input)
+            if isinstance(msg, (SystemMessage, HumanMessage)):
+                continue
+            
+            # AI Message - contains thoughts and tool call decisions
+            if isinstance(msg, AIMessage):
+                content = msg.content if msg.content else ""
+                tool_calls = getattr(msg, 'tool_calls', []) or []
+                
+                # If there's content before tool calls, it's a thought
+                if content and not tool_calls:
+                    # This is a final response (no more tool calls)
+                    steps.append(ThoughtStep(
+                        step_number=step_number,
+                        thought="Generating final response",
+                        action="Final Answer",
+                        action_input=None,
+                        observation=content[:200] + "..." if len(content) > 200 else content
+                    ))
+                    step_number += 1
+                
+                # Process tool calls
+                for tc in tool_calls:
+                    tool_name = tc.get('name', 'unknown')
+                    tool_args = tc.get('args', {})
+                    tool_id = tc.get('id', '')
+                    
+                    # Create a thought step for the tool call
+                    thought = self._infer_thought(tool_name, tool_args)
+                    
+                    step = ThoughtStep(
+                        step_number=step_number,
+                        thought=thought,
+                        action=f"Call tool: {tool_name}",
+                        action_input=tool_args,
+                        observation=None  # Will be filled in by ToolMessage
+                    )
+                    steps.append(step)
+                    pending_tool_calls[tool_id] = (step, len(steps) - 1)
+                    step_number += 1
+            
+            # Tool Message - contains tool output/observation
+            elif isinstance(msg, ToolMessage):
+                tool_id = getattr(msg, 'tool_call_id', '')
+                tool_name = getattr(msg, 'name', 'unknown')
+                content = msg.content if msg.content else ""
+                
+                # Truncate very long tool outputs for readability
+                truncated_content = content[:500] + "..." if len(content) > 500 else content
+                
+                # Match with pending tool call
+                if tool_id in pending_tool_calls:
+                    step, idx = pending_tool_calls[tool_id]
+                    steps[idx].observation = truncated_content
+                
+                # Also record as a tool call
+                tool_calls_list.append(ToolCall(
+                    tool_name=tool_name,
+                    tool_input=pending_tool_calls.get(tool_id, ({}, 0))[0].action_input or {},
+                    tool_output=truncated_content,
+                    duration_ms=0  # We don't have per-tool timing
+                ))
+        
+        trace.steps = steps
+        trace.tool_calls = tool_calls_list
+        
+        return trace
+    
+    def _infer_thought(self, tool_name: str, tool_args: dict) -> str:
+        """Infer the agent's reasoning based on which tool it called.
+        
+        Args:
+            tool_name: Name of the tool being called
+            tool_args: Arguments to the tool
+            
+        Returns:
+            Human-readable thought/reasoning
+        """
+        if tool_name == "get_available_actions":
+            return "I need to see what integration actions are available to handle this request."
+        elif tool_name == "retrieve_api_documentation":
+            action_id = tool_args.get('action_id', 'the selected action')
+            return f"Now I need to retrieve the API documentation for '{action_id}' to understand the required payload structure."
+        elif tool_name == "search_actions":
+            query = tool_args.get('query', '')
+            return f"Searching for actions matching '{query}' to find the best fit."
+        else:
+            return f"Calling {tool_name} to gather more information."
+    
+    def _print_trace(self, trace: AgentTrace):
+        """Print the execution trace in a human-readable format.
+        
+        Args:
+            trace: The execution trace to print
+        """
+        print("\n" + "═" * 60)
+        print("🔍 AGENT EXECUTION TRACE")
+        print("═" * 60)
+        print(f"Model: {trace.model_name}")
+        print(f"Total Duration: {trace.total_duration_ms:.0f}ms")
+        print(f"Tool Calls: {len(trace.tool_calls)}")
+        print("═" * 60)
+        
+        for step in trace.steps:
+            print(f"\n📍 Step {step.step_number}")
+            print("─" * 40)
+            
+            if step.thought:
+                print(f"💭 Thought: {step.thought}")
+            
+            if step.action:
+                print(f"🎬 Action: {step.action}")
+            
+            if step.action_input:
+                # Pretty print the input, but keep it compact
+                if isinstance(step.action_input, dict):
+                    input_str = json.dumps(step.action_input, indent=2)
+                    # Limit to 3 lines for readability
+                    lines = input_str.split('\n')
+                    if len(lines) > 5:
+                        input_str = '\n'.join(lines[:5]) + '\n   ...'
+                else:
+                    input_str = str(step.action_input)
+                print(f"📥 Input: {input_str}")
+            
+            if step.observation:
+                # Truncate long observations
+                obs = step.observation
+                if len(obs) > 300:
+                    obs = obs[:300] + "..."
+                print(f"👁️  Observation: {obs}")
+        
+        print("\n" + "═" * 60)
+    
     def run(self, request: str, context: dict) -> AgentResponse:
         """Run the agent to process a user request.
         
@@ -177,7 +339,7 @@ class IntegrationAgent:
             context: Workflow context dict with 'user_input' and 'variables' keys
             
         Returns:
-            AgentResponse with selected_action, reasoning, and proposed_config
+            AgentResponse with selected_action, reasoning, proposed_config, and optional trace
         """
         # Extract variables from context
         variables = context.get("variables", {})
@@ -194,11 +356,25 @@ class IntegrationAgent:
             HumanMessage(content=user_input)
         ]
         
+        # Track execution time
+        start_time = time.perf_counter()
+        
         # Run the agent
         result = self.agent.invoke({"messages": messages})
         
+        # Calculate duration
+        end_time = time.perf_counter()
+        duration_ms = (end_time - start_time) * 1000
+        
         # Extract the final message content
         final_messages = result.get("messages", [])
+        
+        # Extract trace if verbose mode is enabled
+        trace = None
+        if self.verbose and final_messages:
+            trace = self._extract_trace(final_messages, duration_ms)
+            self._print_trace(trace)
+        
         if final_messages:
             # Get the last AI message
             for msg in reversed(final_messages):
@@ -210,8 +386,14 @@ class IntegrationAgent:
         else:
             output = "{}"
         
-        # Parse and return the response
-        return self._parse_response(output)
+        # Parse the response
+        response = self._parse_response(output)
+        
+        # Attach trace if we have it
+        if trace:
+            response.trace = trace
+        
+        return response
     
     def run_with_workflow_context(self, workflow_context: WorkflowContext) -> AgentResponse:
         """Run the agent with a WorkflowContext object.

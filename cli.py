@@ -9,6 +9,7 @@ Usage:
     python cli.py --context '{"summary": "test"}' "Post to Slack"
     python cli.py --verbose "Create a GitHub issue"
     python cli.py --interactive
+    python cli.py --debug "Post to Slack"  # Shows agent reasoning trace
 """
 
 import argparse
@@ -20,8 +21,83 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.config import OPENAI_MODEL, validate_config
-from src.models import AgentResponse
+from src.models import AgentResponse, AgentTrace
 from src.vector_store import initialize_vector_store
+
+
+# ANSI color codes for terminal output
+class Colors:
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    DIM = '\033[2m'
+    RESET = '\033[0m'
+
+
+def print_trace(trace: AgentTrace):
+    """Pretty print the agent execution trace.
+    
+    Args:
+        trace: The execution trace to display
+    """
+    print(f"\n{Colors.BOLD}{'═' * 70}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.CYAN}🔍 AGENT REASONING TRACE{Colors.RESET}")
+    print(f"{Colors.BOLD}{'═' * 70}{Colors.RESET}")
+    print(f"{Colors.DIM}Model: {trace.model_name} | Duration: {trace.total_duration_ms:.0f}ms | Tool Calls: {len(trace.tool_calls)}{Colors.RESET}")
+    print(f"{'═' * 70}")
+    
+    for step in trace.steps:
+        print(f"\n{Colors.BOLD}{Colors.YELLOW}📍 Step {step.step_number}{Colors.RESET}")
+        print(f"{'─' * 50}")
+        
+        if step.thought:
+            print(f"{Colors.CYAN}💭 Thought:{Colors.RESET}")
+            # Word wrap the thought
+            thought_words = step.thought.split()
+            line = "   "
+            for word in thought_words:
+                if len(line) + len(word) > 67:
+                    print(line)
+                    line = "   " + word
+                else:
+                    line += " " + word if line.strip() else "   " + word
+            if line.strip():
+                print(line)
+        
+        if step.action:
+            print(f"\n{Colors.GREEN}🎬 Action:{Colors.RESET} {step.action}")
+        
+        if step.action_input:
+            print(f"{Colors.BLUE}📥 Input:{Colors.RESET}")
+            if isinstance(step.action_input, dict):
+                # Pretty print JSON input
+                for key, value in step.action_input.items():
+                    val_str = str(value)
+                    if len(val_str) > 50:
+                        val_str = val_str[:50] + "..."
+                    print(f"      {Colors.DIM}{key}:{Colors.RESET} {val_str}")
+            else:
+                print(f"      {step.action_input}")
+        
+        if step.observation:
+            print(f"\n{Colors.YELLOW}👁️  Observation:{Colors.RESET}")
+            # Truncate and format observation
+            obs = step.observation
+            if len(obs) > 400:
+                obs = obs[:400] + f"{Colors.DIM}... (truncated){Colors.RESET}"
+            
+            # Indent observation lines
+            for line in obs.split('\n')[:10]:  # Max 10 lines
+                if line.strip():
+                    print(f"      {line[:80]}")
+    
+    print(f"\n{Colors.BOLD}{'═' * 70}{Colors.RESET}")
+    print(f"{Colors.GREEN}✓ Agent completed reasoning in {len(trace.steps)} steps{Colors.RESET}")
+    print(f"{'═' * 70}\n")
 
 
 def print_header():
@@ -34,20 +110,25 @@ def print_header():
 """)
 
 
-def print_response(response: AgentResponse, verbose: bool = False):
+def print_response(response: AgentResponse, verbose: bool = False, show_trace: bool = False):
     """Pretty print an agent response.
     
     Args:
         response: The AgentResponse to print
         verbose: Whether to show full details
+        show_trace: Whether to display the execution trace
     """
+    # Show trace first if available and requested
+    if show_trace and response.trace:
+        print_trace(response.trace)
+    
     print("\n" + "─" * 60)
-    print("📋 AGENT RESPONSE")
+    print(f"{Colors.BOLD}📋 AGENT RESPONSE{Colors.RESET}")
     print("─" * 60)
     
-    print(f"\n🎯 Selected Action: {response.selected_action}")
+    print(f"\n{Colors.GREEN}🎯 Selected Action:{Colors.RESET} {Colors.BOLD}{response.selected_action}{Colors.RESET}")
     
-    print(f"\n💭 Reasoning:")
+    print(f"\n{Colors.CYAN}💭 Reasoning:{Colors.RESET}")
     # Wrap reasoning text
     reasoning_lines = response.reasoning.split('\n')
     for line in reasoning_lines:
@@ -66,40 +147,55 @@ def print_response(response: AgentResponse, verbose: bool = False):
         else:
             print(f"   {line}")
     
-    print(f"\n📝 Proposed Configuration (Liquid Template):")
+    print(f"\n{Colors.BLUE}📝 Proposed Configuration (Liquid Template):{Colors.RESET}")
     
     if verbose:
-        # Show full config
-        print(f"   {response.proposed_config}")
+        # Show full config with syntax highlighting attempt
+        try:
+            # Try to pretty print if it's valid JSON
+            config_parsed = json.loads(response.proposed_config.replace('{{', '__LBRACE__').replace('}}', '__RBRACE__'))
+            config_str = json.dumps(config_parsed, indent=2).replace('__LBRACE__', '{{').replace('__RBRACE__', '}}')
+            for line in config_str.split('\n'):
+                print(f"   {line}")
+        except:
+            print(f"   {response.proposed_config}")
     else:
         # Show truncated if very long
         config = response.proposed_config
         if len(config) > 200:
             print(f"   {config[:200]}...")
-            print(f"   (truncated, use --verbose to see full config)")
+            print(f"   {Colors.DIM}(truncated, use --verbose to see full config){Colors.RESET}")
         else:
             print(f"   {config}")
+    
+    # Show trace summary if available but not fully displayed
+    if response.trace and not show_trace:
+        print(f"\n{Colors.DIM}💡 Tip: Use --debug to see the agent's reasoning trace ({len(response.trace.steps)} steps, {len(response.trace.tool_calls)} tool calls){Colors.RESET}")
     
     print("\n" + "─" * 60)
 
 
-def run_interactive(agent, verbose: bool = False):
+def run_interactive(agent, verbose: bool = False, debug: bool = False):
     """Run the agent in interactive mode.
     
     Args:
         agent: IntegrationAgent instance
         verbose: Enable verbose output
+        debug: Enable debug mode (shows reasoning trace)
     """
-    print("\n🎤 Interactive Mode")
+    print(f"\n{Colors.BOLD}🎤 Interactive Mode{Colors.RESET}")
     print("Type your integration request, or 'quit' to exit.")
-    print("Use 'set <key> <value>' to set workflow variables.")
+    print("Commands: 'set <key> <value>', 'vars', 'clear', 'debug', 'quit'")
+    if debug:
+        print(f"{Colors.GREEN}✓ Debug mode enabled - showing reasoning traces{Colors.RESET}")
     print()
     
     variables = {}
+    show_trace = debug
     
     while True:
         try:
-            request = input("You> ").strip()
+            request = input(f"{Colors.BOLD}You>{Colors.RESET} ").strip()
             
             if not request:
                 continue
@@ -118,32 +214,55 @@ def run_interactive(agent, verbose: bool = False):
                         variables[key] = json.loads(value)
                     except json.JSONDecodeError:
                         variables[key] = value
-                    print(f"✓ Set {key} = {variables[key]}")
+                    print(f"{Colors.GREEN}✓ Set {key} = {variables[key]}{Colors.RESET}")
                 else:
                     print("Usage: set <key> <value>")
                 continue
             
             if request.lower() == 'vars':
-                print("Current variables:", json.dumps(variables, indent=2))
+                print(f"{Colors.CYAN}Current variables:{Colors.RESET}", json.dumps(variables, indent=2))
                 continue
             
             if request.lower() == 'clear':
                 variables = {}
-                print("✓ Cleared all variables")
+                print(f"{Colors.GREEN}✓ Cleared all variables{Colors.RESET}")
+                continue
+            
+            if request.lower() == 'debug':
+                show_trace = not show_trace
+                status = "enabled" if show_trace else "disabled"
+                print(f"{Colors.GREEN}✓ Debug mode {status}{Colors.RESET}")
+                continue
+            
+            if request.lower() == 'help':
+                print(f"""
+{Colors.BOLD}Available Commands:{Colors.RESET}
+  set <key> <value>  - Set a workflow variable
+  vars               - Show current variables
+  clear              - Clear all variables
+  debug              - Toggle debug mode (show/hide reasoning trace)
+  help               - Show this help
+  quit               - Exit interactive mode
+  
+{Colors.BOLD}Example:{Colors.RESET}
+  set summary "Build completed successfully"
+  set slack_channel "#alerts"
+  Post the summary to Slack
+""")
                 continue
             
             # Run the agent
-            print("\n⏳ Processing...")
+            print(f"\n{Colors.YELLOW}⏳ Processing...{Colors.RESET}")
             context = {"variables": variables}
             response = agent.run(request, context)
-            print_response(response, verbose)
+            print_response(response, verbose, show_trace=show_trace)
             print()
             
         except KeyboardInterrupt:
             print("\nGoodbye! 👋")
             break
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"{Colors.RED}❌ Error: {e}{Colors.RESET}")
 
 
 def main():
@@ -245,10 +364,12 @@ Examples:
         )
         
         if not args.json:
-            print(f"✓ Using model: {agent.model_name}")
+            print(f"{Colors.GREEN}✓ Using model: {agent.model_name}{Colors.RESET}")
+            if args.debug:
+                print(f"{Colors.CYAN}✓ Debug mode enabled - will show reasoning trace{Colors.RESET}")
         
         if args.interactive:
-            run_interactive(agent, args.verbose)
+            run_interactive(agent, args.verbose, debug=args.debug)
         else:
             # Parse context
             if args.context_file:
@@ -260,10 +381,10 @@ Examples:
             context = {"variables": variables}
             
             if not args.json:
-                print(f"📨 Request: {args.request}")
+                print(f"{Colors.BLUE}📨 Request:{Colors.RESET} {args.request}")
                 if variables:
-                    print(f"📎 Variables: {list(variables.keys())}")
-                print("\n⏳ Processing...\n")
+                    print(f"{Colors.BLUE}📎 Variables:{Colors.RESET} {list(variables.keys())}")
+                print(f"\n{Colors.YELLOW}⏳ Processing...{Colors.RESET}\n")
             
             # Run the agent
             response = agent.run(args.request, context)
@@ -275,9 +396,16 @@ Examples:
                     "reasoning": response.reasoning,
                     "proposed_config": response.proposed_config
                 }
+                # Include trace if available
+                if response.trace:
+                    output["trace"] = {
+                        "steps": [s.model_dump() for s in response.trace.steps],
+                        "tool_calls": [t.model_dump() for t in response.trace.tool_calls],
+                        "total_duration_ms": response.trace.total_duration_ms
+                    }
                 print(json.dumps(output, indent=2))
             else:
-                print_response(response, args.verbose)
+                print_response(response, args.verbose, show_trace=args.debug)
             
     except ValueError as e:
         print(f"❌ Configuration Error: {e}")
