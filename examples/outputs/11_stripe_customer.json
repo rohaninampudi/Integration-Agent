@@ -1,0 +1,5 @@
+{
+  "selected_action": "stripe_create_customer",
+  "reasoning": "The user wants to create a new Stripe customer. The 'stripe_create_customer' action directly corresponds to this request. The config maps available workflow variables to Stripe's customer fields (email, name, phone), adds a helpful description using plan and signup_source, and includes metadata (referred_by, user_id) plus plan and signup_source for better traceability.",
+  "proposed_config": "{ \"email\": \"{{ customer.email }}\", \"name\": \"{{ customer.name }}\", \"phone\": \"{{ customer.phone }}\", \"description\": \"Signup via {{ signup_source }} - Plan: {{ plan }}\", \"metadata\": { \"referred_by\": \"{{ metadata.referred_by }}\", \"user_id\": \"{{ metadata.user_id }}\", \"plan\": \"{{ plan }}\", \"signup_source\": \"{{ signup_source }}\" } }"
+}

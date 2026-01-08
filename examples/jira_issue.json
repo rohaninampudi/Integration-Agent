@@ -1,0 +1,14 @@
+{
+  "description": "Create a Jira issue for bug tracking",
+  "example_request": "Create a Jira ticket for this bug",
+  "variables": {
+    "project_key": "PROJ",
+    "bug": {
+      "summary": "Login page returns 500 error on mobile",
+      "description": "Users on iOS Safari cannot log in. Error occurs after entering credentials.\n\nSteps to reproduce:\n1. Open Safari on iOS\n2. Navigate to login page\n3. Enter valid credentials\n4. Click 'Sign In'\n5. See 500 error",
+      "priority": "High"
+    },
+    "labels": ["mobile", "urgent", "login"],
+    "affected_version": "2.1.0"
+  }
+}

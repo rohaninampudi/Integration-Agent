@@ -1,0 +1,14 @@
+{
+  "description": "Create a Trello card for a task",
+  "example_request": "Create a Trello card for this task",
+  "variables": {
+    "list_id": "5f1a2b3c4d5e6f7a8b9c0d1e",
+    "board_id": "5f1a2b3c4d5e6f7a8b9c0d2f",
+    "task": {
+      "name": "Review pull request #42",
+      "description": "Code review needed for the authentication module updates.\n\n## Checklist\n- [ ] Check security implications\n- [ ] Test edge cases\n- [ ] Review test coverage",
+      "due_date": "2024-01-15T17:00:00Z"
+    },
+    "assignee": "team-member-id"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "description": "Send an email notification via SendGrid",
+  "example_request": "Send an email notification via SendGrid about the order",
+  "variables": {
+    "recipient": {
+      "email": "customer@example.com",
+      "name": "John Customer"
+    },
+    "order": {
+      "id": "ORD-12345",
+      "total": "$149.99",
+      "status": "shipped",
+      "items": [
+        {"name": "Wireless Headphones", "qty": 1},
+        {"name": "USB-C Cable", "qty": 2}
+      ],
+      "tracking_url": "https://track.example.com/12345"
+    },
+    "from_email": "orders@store.com",
+    "from_name": "Store Notifications"
+  }
+}

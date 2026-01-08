@@ -1,0 +1,5 @@
+{
+  "selected_action": "notion_update_block",
+  "reasoning": "The user wants to update an existing Notion block's content. The 'notion_update_block' action is specifically designed to update a block. We have the required variables: 'block_id' to target the block and 'new_content' for the updated text. Following Notion's update block pattern, we set the paragraph rich_text to the new content.",
+  "proposed_config": "{ \"block_id\": \"{{ block_id }}\", \"paragraph\": { \"rich_text\": [ { \"type\": \"text\", \"text\": { \"content\": \"{{ new_content }}\" } } ] } }"
+}

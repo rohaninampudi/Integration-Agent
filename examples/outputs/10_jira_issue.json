@@ -1,0 +1,5 @@
+{
+  "selected_action": "jira_create_issue",
+  "reasoning": "The user asked to create a Jira ticket. The 'jira_create_issue' action is the appropriate API for creating issues. Based on the Jira API docs, we must provide fields.project.key, fields.summary, and fields.issuetype.name. I included optional fields for priority, labels, and the affected version. The description is provided in Jira ADF format to comply with the v3 API, and the Liquid 'json' filter is used to safely encode the multiline bug description. Labels are rendered via a Liquid loop to form a valid JSON array.",
+  "proposed_config": "{ \"fields\": { \"project\": { \"key\": \"{{ project_key }}\" }, \"summary\": \"{{ bug.summary }}\", \"issuetype\": { \"name\": \"Bug\" }, \"priority\": { \"name\": \"{{ bug.priority }}\" }, \"labels\": [{% for label in labels %}\"{{ label }}\"{% unless forloop.last %}, {% endunless %}{% endfor %}], \"versions\": [{ \"name\": \"{{ affected_version }}\" }], \"description\": { \"type\": \"doc\", \"version\": 1, \"content\": [{ \"type\": \"paragraph\", \"content\": [{ \"type\": \"text\", \"text\": {{ bug.description | json }} }] }] } } }"
+}

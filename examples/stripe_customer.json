@@ -1,0 +1,17 @@
+{
+  "description": "Create a Stripe customer for a new signup",
+  "example_request": "Create a new customer in Stripe for this signup",
+  "variables": {
+    "customer": {
+      "email": "newuser@example.com",
+      "name": "Jane Doe",
+      "phone": "+1-555-987-6543"
+    },
+    "plan": "premium",
+    "signup_source": "landing_page",
+    "metadata": {
+      "user_id": "usr_abc123",
+      "referred_by": "partner_xyz"
+    }
+  }
+}

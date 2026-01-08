@@ -1,0 +1,5 @@
+{
+  "selected_action": "twilio_send_sms",
+  "reasoning": "The user wants to send an SMS via Twilio. The 'twilio_send_sms' action directly maps to this request. The available variables include the recipient number (alert_phone), the Twilio sender number (twilio_number), and alert details (message, server, timestamp, type), which are used to compose the SMS body per Twilio's Create a Message payload requirements (To, From, Body).",
+  "proposed_config": "{ \"To\": \"{{ alert_phone }}\", \"From\": \"{{ twilio_number }}\", \"Body\": \"[{{ app_name }}] {{ alert.type }} on {{ alert.server }} - {{ alert.message }}\\nTimestamp: {{ alert.timestamp }}\" }"
+}

@@ -1,0 +1,16 @@
+{
+  "description": "Create a HubSpot contact from lead data",
+  "example_request": "Add this lead as a contact in HubSpot",
+  "variables": {
+    "lead": {
+      "email": "john.smith@acmecorp.com",
+      "first_name": "John",
+      "last_name": "Smith",
+      "company": "Acme Corporation",
+      "job_title": "VP of Engineering",
+      "phone": "+1-555-123-4567"
+    },
+    "lead_source": "website_form",
+    "lifecycle_stage": "lead"
+  }
+}

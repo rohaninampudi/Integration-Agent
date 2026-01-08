@@ -1,0 +1,5 @@
+{
+  "selected_action": "trello_create_card",
+  "reasoning": "The user requested creating a Trello card. The available actions include 'trello_create_card', which matches the intent. From the provided variables, 'list_id' maps to Trello's required 'idList'. We use 'task.name' for the card title, 'task.description' for the description, 'task.due_date' for the due date, and 'assignee' for 'idMembers'. The description contains newlines/markdown, so the Liquid 'jsonify' filter is used to safely escape it (and the name) ensuring the rendered config is valid JSON.",
+  "proposed_config": "{ \"idList\": \"{{ list_id }}\", \"name\": {{ task.name | jsonify }}, \"desc\": {{ task.description | jsonify }}, \"due\": \"{{ task.due_date }}\", \"idMembers\": \"{{ assignee }}\" }"
+}

@@ -1,0 +1,15 @@
+{
+  "description": "Send an SMS alert via Twilio",
+  "example_request": "Send an SMS alert via Twilio about the system status",
+  "variables": {
+    "alert_phone": "+14155551234",
+    "twilio_number": "+14155559876",
+    "alert": {
+      "type": "warning",
+      "message": "CPU usage exceeded 90% on production server",
+      "timestamp": "2024-01-08T14:30:00Z",
+      "server": "prod-web-01"
+    },
+    "app_name": "MonitoringApp"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "selected_action": "hubspot_create_contact",
+  "reasoning": "The user wants to add a lead as a contact in HubSpot. The 'hubspot_create_contact' action is designed for creating contacts. Using the HubSpot API docs, the payload must include a 'properties' object with standard fields like email, firstname, lastname, phone, company, jobtitle, and lifecyclestage. I mapped the provided workflow variables to HubSpot\u2019s expected property names and included lifecycle_stage. I omitted lead_source because it does not directly map to a standard HubSpot contact property without a known custom field or specific enumerated analytics source.",
+  "proposed_config": "{ \"properties\": { \"email\": \"{{ lead.email }}\", \"firstname\": \"{{ lead.first_name }}\", \"lastname\": \"{{ lead.last_name }}\", \"phone\": \"{{ lead.phone }}\", \"company\": \"{{ lead.company }}\", \"jobtitle\": \"{{ lead.job_title }}\", \"lifecyclestage\": \"{{ lifecycle_stage }}\" } }"
+}

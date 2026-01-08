@@ -140,6 +140,144 @@ class EvalHarness:
             },
             description="Array loop for appending to existing spreadsheet"
         ),
+        # ===== Extended scenarios for all 13 actions =====
+        TestScenario(
+            request="Update the Notion block with the new status message",
+            expected_action="notion_update_block",
+            context={
+                "user_input": "Update the Notion block with the new status message",
+                "variables": {
+                    "block_id": "b1c2d3e4-5f6a-7b8c-9d0e-1f2a3b4c5d6e",
+                    "new_content": "Status: Completed ✅ - All tasks finished successfully.",
+                    "status": "completed"
+                }
+            },
+            description="Notion block update with text content"
+        ),
+        TestScenario(
+            request="Create a record in my Airtable base with the product data",
+            expected_action="airtable_create_record",
+            context={
+                "user_input": "Create a record in my Airtable base with the product data",
+                "variables": {
+                    "base_id": "appXYZ123456789",
+                    "table_name": "Products",
+                    "product_data": {
+                        "name": "New Product",
+                        "price": 99.99,
+                        "category": "Electronics",
+                        "in_stock": True
+                    }
+                }
+            },
+            description="Airtable record creation with product fields"
+        ),
+        TestScenario(
+            request="Add this lead as a contact in HubSpot",
+            expected_action="hubspot_create_contact",
+            context={
+                "user_input": "Add this lead as a contact in HubSpot",
+                "variables": {
+                    "lead": {
+                        "email": "john.smith@acmecorp.com",
+                        "first_name": "John",
+                        "last_name": "Smith",
+                        "company": "Acme Corporation",
+                        "job_title": "VP of Engineering",
+                        "phone": "+1-555-123-4567"
+                    }
+                }
+            },
+            description="HubSpot contact creation with lead data"
+        ),
+        TestScenario(
+            request="Create a Trello card for this task",
+            expected_action="trello_create_card",
+            context={
+                "user_input": "Create a Trello card for this task",
+                "variables": {
+                    "list_id": "5f1a2b3c4d5e6f7a8b9c0d1e",
+                    "task": {
+                        "name": "Review pull request #42",
+                        "description": "Code review needed for the authentication module updates",
+                        "due_date": "2024-01-15T17:00:00Z"
+                    }
+                }
+            },
+            description="Trello card creation with task details"
+        ),
+        TestScenario(
+            request="Create a Jira ticket for this bug",
+            expected_action="jira_create_issue",
+            context={
+                "user_input": "Create a Jira ticket for this bug",
+                "variables": {
+                    "project_key": "PROJ",
+                    "bug": {
+                        "summary": "Login page returns 500 error on mobile",
+                        "description": "Users on iOS Safari cannot log in. Error occurs after entering credentials.",
+                        "priority": "High"
+                    },
+                    "labels": ["mobile", "urgent", "login"]
+                }
+            },
+            description="Jira issue creation for bug tracking"
+        ),
+        TestScenario(
+            request="Create a new customer in Stripe for this signup",
+            expected_action="stripe_create_customer",
+            context={
+                "user_input": "Create a new customer in Stripe for this signup",
+                "variables": {
+                    "customer": {
+                        "email": "newuser@example.com",
+                        "name": "Jane Doe",
+                        "phone": "+1-555-987-6543"
+                    },
+                    "plan": "premium",
+                    "signup_source": "landing_page"
+                }
+            },
+            description="Stripe customer creation with metadata"
+        ),
+        TestScenario(
+            request="Send an email notification via SendGrid about the order",
+            expected_action="sendgrid_send_email",
+            context={
+                "user_input": "Send an email notification via SendGrid about the order",
+                "variables": {
+                    "recipient": {
+                        "email": "customer@example.com",
+                        "name": "John Customer"
+                    },
+                    "order": {
+                        "id": "ORD-12345",
+                        "total": "$149.99",
+                        "status": "shipped"
+                    },
+                    "from_email": "orders@store.com",
+                    "from_name": "Store Notifications"
+                }
+            },
+            description="SendGrid email for order notification"
+        ),
+        TestScenario(
+            request="Send an SMS alert via Twilio about the system status",
+            expected_action="twilio_send_sms",
+            context={
+                "user_input": "Send an SMS alert via Twilio about the system status",
+                "variables": {
+                    "alert_phone": "+14155551234",
+                    "twilio_number": "+14155559876",
+                    "alert": {
+                        "type": "warning",
+                        "message": "CPU usage exceeded 90% on production server",
+                        "timestamp": "2024-01-08T14:30:00Z"
+                    }
+                }
+            },
+            description="Twilio SMS for system alerts"
+        ),
     ]
     
     def __init__(self, scenarios: Optional[list[TestScenario]] = None):
