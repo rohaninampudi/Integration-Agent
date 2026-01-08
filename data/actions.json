@@ -1,0 +1,80 @@
+[
+  {
+    "id": "google_sheets_create",
+    "name": "Create Google Spreadsheet",
+    "description": "Creates a new Google Sheets spreadsheet",
+    "api_reference": "Google Sheets API v4 - spreadsheets.create"
+  },
+  {
+    "id": "google_sheets_append",
+    "name": "Append Rows to Google Sheet",
+    "description": "Appends rows to an existing spreadsheet",
+    "api_reference": "Google Sheets API v4 - spreadsheets.values.append"
+  },
+  {
+    "id": "notion_create_page",
+    "name": "Create Notion Page",
+    "description": "Creates a new page in a Notion database or as a child of another page",
+    "api_reference": "Notion API - Create a page"
+  },
+  {
+    "id": "notion_update_block",
+    "name": "Update Notion Block",
+    "description": "Updates the content of an existing block",
+    "api_reference": "Notion API - Update a block"
+  },
+  {
+    "id": "slack_post_message",
+    "name": "Send Slack Message",
+    "description": "Posts a message to a Slack channel",
+    "api_reference": "Slack Web API - chat.postMessage"
+  },
+  {
+    "id": "airtable_create_record",
+    "name": "Create Airtable Record",
+    "description": "Creates a new record in an Airtable base",
+    "api_reference": "Airtable API - Create records"
+  },
+  {
+    "id": "hubspot_create_contact",
+    "name": "Create HubSpot Contact",
+    "description": "Creates a new contact in HubSpot CRM",
+    "api_reference": "HubSpot API - Create a contact"
+  },
+  {
+    "id": "github_create_issue",
+    "name": "Create GitHub Issue",
+    "description": "Creates a new issue in a GitHub repository",
+    "api_reference": "GitHub REST API - Create an issue"
+  },
+  {
+    "id": "trello_create_card",
+    "name": "Create Trello Card",
+    "description": "Creates a new card on a Trello board",
+    "api_reference": "Trello REST API - Create a new Card"
+  },
+  {
+    "id": "jira_create_issue",
+    "name": "Create Jira Issue",
+    "description": "Creates a new issue in a Jira project",
+    "api_reference": "Jira Cloud Platform REST API - Create issue"
+  },
+  {
+    "id": "stripe_create_customer",
+    "name": "Create Stripe Customer",
+    "description": "Creates a new customer object in Stripe",
+    "api_reference": "Stripe API - Create a customer"
+  },
+  {
+    "id": "sendgrid_send_email",
+    "name": "Send Email via SendGrid",
+    "description": "Sends an email using SendGrid's Web API",
+    "api_reference": "SendGrid v3 API - Mail Send"
+  },
+  {
+    "id": "twilio_send_sms",
+    "name": "Send SMS via Twilio",
+    "description": "Sends an SMS message to a phone number",
+    "api_reference": "Twilio API - Create a Message"
+  }
+]

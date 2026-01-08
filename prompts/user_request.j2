@@ -1,0 +1,22 @@
+## User Request
+{{ request }}
+
+## Available Workflow Variables
+{% for key, value in variables.items() %}
+- {{ key }}: {{ value | tojson }}
+{% endfor %}
+
+## Required Output Format
+After using the tools to select an action and retrieve API docs, respond with a JSON object:
+```json
+{
+  "selected_action": "<action_id>",
+  "reasoning": "<explanation of why this action was selected and how the config was generated>",
+  "proposed_config": "<liquid template string that renders to valid JSON>"
+}
+```
+
+Important:
+- The `proposed_config` must be a STRING containing Liquid template syntax
+- Use `{{ "{{" }} variable_name {{ "}}" }}` for variables and `{{ "{%" }} for item in array {{ "%}" }}...{{ "{%" }} endfor {{ "%}" }}` for loops
+- When rendered with the workflow variables, it must produce valid JSON

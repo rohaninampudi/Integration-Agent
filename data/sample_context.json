@@ -1,0 +1,26 @@
+{
+  "user_input": "Create a spreadsheet with my scraped product data",
+  "variables": {
+    "scraper_results": [
+      {
+        "name": "Wireless Headphones",
+        "price": 79.99,
+        "url": "https://store.example.com/p/1001"
+      },
+      {
+        "name": "USB-C Hub",
+        "price": 45.0,
+        "url": "https://store.example.com/p/1002"
+      },
+      {
+        "name": "Mechanical Keyboard",
+        "price": 149.99,
+        "url": "https://store.example.com/p/1003"
+      }
+    ],
+    "summary": "Found 3 products. Average price: $91.66. Lowest: USB-C Hub ($45.00)",
+    "target_email": "user@company.com",
+    "slack_channel": "#product-alerts",
+    "notion_database_id": "8a3b1c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"
+  }
+}

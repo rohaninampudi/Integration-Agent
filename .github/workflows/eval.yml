@@ -1,0 +1,182 @@
+# Integration Agent Evaluation Workflow
+# 
+# This workflow runs the evaluation harness whenever prompts are changed.
+# It tracks performance evolution across prompt iterations.
+
+name: Run Evaluations
+
+on:
+  push:
+    paths:
+      - 'prompts/**'
+      - 'src/**'
+      - 'tools/**'
+      - 'tests/eval_harness.py'
+    branches:
+      - main
+      - 'feature/**'
+  pull_request:
+    paths:
+      - 'prompts/**'
+      - 'src/**'
+      - 'tools/**'
+      - 'tests/eval_harness.py'
+  workflow_dispatch:
+    inputs:
+      use_mock:
+        description: 'Use mock agent instead of real API'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  PYTHON_VERSION: '3.13'
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run unit tests
+        run: |
+          python -m pytest tests/ -v --tb=short --ignore=tests/eval_harness.py
+
+  evaluate:
+    name: Run Evaluation
+    runs-on: ubuntu-latest
+    needs: test
+    
+    # Only run with real agent if we have the API key
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git SHA
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Get current git SHA
+        id: git_info
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "branch=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+      
+      - name: Run evaluation (mock)
+        if: ${{ github.event.inputs.use_mock == 'true' || env.OPENAI_API_KEY == '' }}
+        run: |
+          echo "Running with mock agent..."
+          python tests/eval_harness.py --mock --verbose --output eval_${{ steps.git_info.outputs.sha_short }}.json
+      
+      - name: Run evaluation (real)
+        if: ${{ github.event.inputs.use_mock != 'true' && env.OPENAI_API_KEY != '' }}
+        run: |
+          echo "Running with real agent..."
+          python tests/eval_harness.py --real --verbose --output eval_${{ steps.git_info.outputs.sha_short }}.json
+      
+      - name: Upload evaluation results
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results-${{ steps.git_info.outputs.sha_short }}
+          path: results/eval_*.json
+          retention-days: 30
+      
+      - name: Compare with baseline (if exists)
+        continue-on-error: true
+        run: |
+          # Find the most recent baseline
+          BASELINE=$(ls -t results/eval_*.json 2>/dev/null | grep -v "${{ steps.git_info.outputs.sha_short }}" | head -1)
+          CURRENT="results/eval_${{ steps.git_info.outputs.sha_short }}.json"
+          
+          if [ -n "$BASELINE" ] && [ -f "$BASELINE" ] && [ -f "$CURRENT" ]; then
+            echo "Comparing $BASELINE vs $CURRENT"
+            python tests/eval_harness.py --compare "$BASELINE" "$CURRENT"
+          else
+            echo "No baseline found for comparison"
+          fi
+      
+      - name: Generate summary
+        run: |
+          RESULT_FILE="results/eval_${{ steps.git_info.outputs.sha_short }}.json"
+          if [ -f "$RESULT_FILE" ]; then
+            echo "## 📊 Evaluation Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Git SHA | ${{ steps.git_info.outputs.sha_short }} |" >> $GITHUB_STEP_SUMMARY
+            
+            # Extract metrics using Python
+            python -c "
+          import json
+          with open('$RESULT_FILE') as f:
+              data = json.load(f)
+          metrics = data.get('metrics', {})
+          print(f\"| Action Accuracy | {metrics.get('action_accuracy', 0):.1f}% |\")
+          print(f\"| Liquid Valid | {metrics.get('liquid_valid', 0):.1f}% |\")
+          print(f\"| Renders to JSON | {metrics.get('renders_to_json', 0):.1f}% |\")
+          print(f\"| Avg Latency | {metrics.get('avg_latency_ms', 0):.0f}ms |\")
+          print(f\"| Error Rate | {metrics.get('error_rate', 0):.1f}% |\")
+            " >> $GITHUB_STEP_SUMMARY
+            
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Prompt Hash: \`$(python -c \"import json; print(json.load(open('$RESULT_FILE')).get('prompt_hash', 'unknown'))\")\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Optional: Commit results back to repo (for tracking)
+  commit-results:
+    name: Commit Results
+    runs-on: ubuntu-latest
+    needs: evaluate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download evaluation results
+        uses: actions/download-artifact@v4
+        with:
+          name: eval-results-${{ github.sha }}
+          path: results/
+        continue-on-error: true
+      
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          if [ -n "$(git status results/ --porcelain)" ]; then
+            git add results/
+            git commit -m "📊 Add evaluation results for $(git rev-parse --short HEAD)"
+            git push
+          else
+            echo "No new results to commit"
+          fi

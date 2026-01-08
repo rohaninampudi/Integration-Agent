@@ -1,0 +1,71 @@
+{
+  "timestamp": "2026-01-08T02:38:55.332093",
+  "git_sha": "unknown",
+  "prompt_hash": "e5f3b88e",
+  "total_scenarios": 4,
+  "metrics": {
+    "action_accuracy": 75.0,
+    "liquid_valid": 100.0,
+    "renders_to_json": 100.0,
+    "avg_latency_ms": 40669.0724582877,
+    "error_rate": 0.0
+  },
+  "details": [
+    {
+      "scenario_id": 0,
+      "request": "Post the summary to Slack",
+      "expected_action": "slack_post_message",
+      "actual_action": "slack_post_message",
+      "action_correct": true,
+      "liquid_valid": true,
+      "renders_to_json": true,
+      "reasoning": "User wants to post a message to Slack. The slack_post_message action maps directly to Slack's chat.postMessage and requires channel and text. We have slack_channel for the target and summary for the message content, satisfying required fields.",
+      "proposed_config": "{ \"channel\": \"{{ slack_channel }}\", \"text\": \"{{ summary }}\" }",
+      "rendered_config": "{ \"channel\": \"#product-alerts\", \"text\": \"Found 3 products. Average price: $91.66. Lowest: USB-C Hub ($45.00)\" }",
+      "latency_ms": 30926.269124960527,
+      "error": null
+    },
+    {
+      "scenario_id": 1,
+      "request": "Add these products to my Notion database",
+      "expected_action": "notion_create_page",
+      "actual_action": "notion_create_page",
+      "action_correct": true,
+      "liquid_valid": true,
+      "renders_to_json": true,
+      "reasoning": "The user wants to add multiple products as entries in a Notion database. Creating database entries corresponds to creating pages in the target database. The 'notion_create_page' action is appropriate per the Notion Create Page API. The config loops over scraper_results to generate one page payload per product, mapping Name (title), Price (number), and URL (url) to typical database properties.",
+      "proposed_config": "[{% for product in scraper_results %}{ \"parent\": { \"database_id\": \"{{ notion_database_id }}\" }, \"properties\": { \"Name\": { \"title\": [ { \"text\": { \"content\": \"{{ product.name }}\" } } ] }, \"Price\": { \"number\": {{ product.price }} }, \"URL\": { \"url\": \"{{ product.url }}\" } } }{% unless forloop.last %}, {% endunless %}{% endfor %}]",
+      "rendered_config": "[{ \"parent\": { \"database_id\": \"8a3b1c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d\" }, \"properties\": { \"Name\": { \"title\": [ { \"text\": { \"content\": \"Wireless Headphones\" } } ] }, \"Price\": { \"number\": 79.99 }, \"URL\": { \"url\": \"https://store.example.com/p/1001\" } } }, { \"parent\": { \"database_id\": \"8a3b1c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d\" }, \"properties\": { \"Name\": { \"title\": [ { \"text\": { \"content\": \"USB-C Hub\" } } ] }, \"Price\": { \"number\": 45.0 }, \"URL\": { \"url\": \"https://store.example.com/p/1002\" } } }, { \"parent\": { \"database_id\": \"8a3b1c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d\" }, \"properties\": { \"Name\": { \"title\": [ { \"text\": { \"content\": \"Mechanical Keyboard\" } } ] }, \"Price\": { \"number\": 149.99 }, \"URL\": { \"url\": \"https://store.example.com/p/1003\" } } }]",
+      "latency_ms": 102993.60579112545,
+      "error": null
+    },
+    {
+      "scenario_id": 2,
+      "request": "Create a GitHub issue for the failed scrape",
+      "expected_action": "github_create_issue",
+      "actual_action": "parse_error",
+      "action_correct": false,
+      "liquid_valid": true,
+      "renders_to_json": true,
+      "reasoning": "Failed to parse agent output: Expecting value: line 1 column 1 (char 0)\nRaw output: {\n  \"selected_action\": \"github_create_issue\",\n  \"reasoning\": \"The user wants to open a GitHub issue to track a failed scrape. The available actions include 'github_create_issue', which matches the request. Per the GitHub Create Issue API, the payload must include a title and can optionally include a body and labels. I used the provided variables 'summary' and 'error_details' to populate a clear issue body with Markdown formatting and added helpful labels. The configuration is a Liquid template t",
+      "proposed_config": "{}",
+      "rendered_config": "{}",
+      "latency_ms": 15340.794374933466,
+      "error": null
+    },
+    {
+      "scenario_id": 3,
+      "request": "Add these results to the existing spreadsheet",
+      "expected_action": "google_sheets_append",
+      "actual_action": "google_sheets_append",
+      "action_correct": true,
+      "liquid_valid": true,
+      "renders_to_json": true,
+      "reasoning": "The user wants to add rows to an existing spreadsheet and a spreadsheet_id is provided. The google_sheets_append action (spreadsheets.values.append) is appropriate for appending rows. The config uses the provided spreadsheet_id, targets a standard range (Sheet1!A:C), sets valueInputOption to USER_ENTERED, and loops over scraper_results to build the 2D values array.",
+      "proposed_config": "{ \"spreadsheetId\": \"{{ spreadsheet_id }}\", \"range\": \"Sheet1!A:C\", \"valueInputOption\": \"USER_ENTERED\", \"values\": [{% for product in scraper_results %}[\"{{ product.name }}\", {{ product.price }}, \"{{ product.url }}\"]{% unless forloop.last %}, {% endunless %}{% endfor %}] }",
+      "rendered_config": "{ \"spreadsheetId\": \"1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms\", \"range\": \"Sheet1!A:C\", \"valueInputOption\": \"USER_ENTERED\", \"values\": [[\"Wireless Headphones\", 79.99, \"https://store.example.com/p/1001\"], [\"USB-C Hub\", 45.0, \"https://store.example.com/p/1002\"]] }",
+      "latency_ms": 13415.620542131364,
+      "error": null
+    }
+  ]
+}

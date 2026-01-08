@@ -1,0 +1,71 @@
+{
+  "timestamp": "2026-01-08T02:38:43.873644",
+  "git_sha": "unknown",
+  "prompt_hash": "e5f3b88e",
+  "total_scenarios": 4,
+  "metrics": {
+    "action_accuracy": 100.0,
+    "liquid_valid": 100.0,
+    "renders_to_json": 100.0,
+    "avg_latency_ms": 0.01679197885096073,
+    "error_rate": 0.0
+  },
+  "details": [
+    {
+      "scenario_id": 0,
+      "request": "Post the summary to Slack",
+      "expected_action": "slack_post_message",
+      "actual_action": "slack_post_message",
+      "action_correct": true,
+      "liquid_valid": true,
+      "renders_to_json": true,
+      "reasoning": "Mock agent selected slack_post_message based on keywords",
+      "proposed_config": "{ \"channel\": \"{{ slack_channel }}\", \"text\": \"{{ summary }}\" }",
+      "rendered_config": "{ \"channel\": \"#product-alerts\", \"text\": \"Found 3 products. Average price: $91.66. Lowest: USB-C Hub ($45.00)\" }",
+      "latency_ms": 0.060499878600239754,
+      "error": null
+    },
+    {
+      "scenario_id": 1,
+      "request": "Add these products to my Notion database",
+      "expected_action": "notion_create_page",
+      "actual_action": "notion_create_page",
+      "action_correct": true,
+      "liquid_valid": true,
+      "renders_to_json": true,
+      "reasoning": "Mock agent selected notion_create_page based on keywords",
+      "proposed_config": "{ \"parent\": { \"database_id\": \"{{ notion_database_id }}\" } }",
+      "rendered_config": "{ \"parent\": { \"database_id\": \"8a3b1c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d\" } }",
+      "latency_ms": 0.0034170225262641907,
+      "error": null
+    },
+    {
+      "scenario_id": 2,
+      "request": "Create a GitHub issue for the failed scrape",
+      "expected_action": "github_create_issue",
+      "actual_action": "github_create_issue",
+      "action_correct": true,
+      "liquid_valid": true,
+      "renders_to_json": true,
+      "reasoning": "Mock agent selected github_create_issue based on keywords",
+      "proposed_config": "{ \"title\": \"Issue\", \"body\": \"{{ summary }}\" }",
+      "rendered_config": "{ \"title\": \"Issue\", \"body\": \"Scrape failed: Connection timeout after 30s. URL: https://store.example.com\" }",
+      "latency_ms": 0.001708976924419403,
+      "error": null
+    },
+    {
+      "scenario_id": 3,
+      "request": "Add these results to the existing spreadsheet",
+      "expected_action": "google_sheets_append",
+      "actual_action": "google_sheets_append",
+      "action_correct": true,
+      "liquid_valid": true,
+      "renders_to_json": true,
+      "reasoning": "Mock agent selected google_sheets_append based on keywords",
+      "proposed_config": "{ \"spreadsheetId\": \"{{ spreadsheet_id }}\", \"values\": [] }",
+      "rendered_config": "{ \"spreadsheetId\": \"1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms\", \"values\": [] }",
+      "latency_ms": 0.0015420373529195786,
+      "error": null
+    }
+  ]
+}
