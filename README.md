@@ -1,6 +1,6 @@
 # Integration Agent
 
-An AI-powered agent that helps users configure API integrations for workflow automation using natural language.
+An AI-powered agent that helps users configure API integrations for workflow automation using natural language. Built with an **Agentic RAG** architecture where the LLM orchestrates retrieval decisions.
 
 ## Features
 
@@ -33,7 +33,7 @@ All integrations include full API documentation in `data/api_docs/` for accurate
 ## What's Included
 
 ✅ **Functional Agent**: LangGraph ReAct agent with tool calling  
-✅ **RAG Implementation**: ChromaDB vector store with OpenAI embeddings for API docs  
+✅ **Agentic RAG**: Agent-driven retrieval from ChromaDB with OpenAI embeddings  
 ✅ **Evaluation Framework**: Harness with metrics tracking (action accuracy, Liquid validity, JSON rendering)  
 ✅ **Example Workflows**: 6+ pre-built context files for testing  
 ✅ **Debug/Trace Mode**: Full observability into agent reasoning  
@@ -273,7 +273,7 @@ The Integration Agent follows a multi-step ReAct workflow:
 
 1. **Analyze Request**: Understands user's intent and available variables
 2. **Select Action**: Uses `get_available_actions` to find matching integrations
-3. **Retrieve Docs**: Uses `retrieve_api_documentation` with RAG to get payload structure
+3. **Retrieve Docs**: Uses `retrieve_api_documentation` with Agentic RAG to get payload structure
 4. **Generate Config**: Creates a Liquid template with proper variable interpolation
 5. **Return Response**: Provides action ID, reasoning, and templated configuration
 
@@ -300,7 +300,7 @@ Output:
 User Request → Agent → Tools → LLM → Structured Response
                  │
                  ├── get_available_actions (lists integration catalog)
-                 └── retrieve_api_documentation (RAG from ChromaDB)
+                 └── retrieve_api_documentation (Agentic RAG from ChromaDB)
 ```
 
 **Technology Stack:**

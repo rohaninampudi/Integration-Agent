@@ -13,7 +13,7 @@
 5. [Observability & Debugging](#5-observability--debugging)
 6. [Performance Evolution](#6-performance-evolution)
 7. [Key Tradeoffs & Challenges](#7-key-tradeoffs--challenges)
-8. [Future Improvements](#8-future-improvements)
+8. [Future Improvements](#8-future-improvements) 
 9. [Demo Commands](#9-demo-commands)
 
 ---
@@ -29,11 +29,13 @@ Users building AI workflows struggle to configure integration actions (API wrapp
 
 ### Our Solution
 
-An **AI agent** that:
+An **Agentic RAG** system that:
 1. **Understands natural language** — "Post the summary to Slack"
 2. **Selects the right integration** from a catalog of **13 actions**
-3. **Retrieves accurate API documentation** using RAG with **12 curated API docs**
+3. **Retrieves accurate API documentation** using agent-driven retrieval with **12 curated API docs**
 4. **Generates valid Liquid-templated configurations** that render to API-ready JSON
+
+> **Why Agentic RAG?** Unlike traditional RAG (query → retrieve → generate), our agent *decides* when and what to retrieve. The LLM orchestrates multiple tool calls, reasoning about information needs before each retrieval step.
 
 ### Key Output Format
 
@@ -82,7 +84,7 @@ The `proposed_config` is a **Liquid template string** that, when rendered with w
 │  ┌─────────────────────────┐  ┌─────────────────────────────────────┐   │
 │  │  get_available_actions  │  │  retrieve_api_documentation         │   │
 │  │  ───────────────────────│  │  ───────────────────────────────────│   │
-│  │  Returns action catalog │  │  RAG retrieval from ChromaDB        │   │
+│  │  Returns action catalog │  │  Agentic RAG from ChromaDB          │   │
 │  │  with metadata          │  │  Returns relevant API doc chunks    │   │
 │  └───────────┬─────────────┘  └─────────────────┬───────────────────┘   │
 │              │                                  │                        │
@@ -250,7 +252,7 @@ def get_available_actions(query: str = "") -> str:
     return json.dumps({"actions": actions, "total_actions": len(actions)})
 ```
 
-#### Tool 2: Retrieve API Documentation (RAG)
+#### Tool 2: Retrieve API Documentation (Agentic RAG)
 
 📁 **File**: [`tools/retrieve_docs.py`](tools/retrieve_docs.py)
 
@@ -791,7 +793,7 @@ python tests/eval_harness.py --compare results/eval_baseline_4actions.json resul
 | Accept natural language + context | CLI with `--context` flag and `-f` for files | ✅ |
 | Select correct integration action | 100% accuracy on 12 test scenarios | ✅ |
 | Support all 13 integrations | 12 API docs covering all actions | ✅ |
-| Retrieve accurate payload structure | RAG with ChromaDB + curated docs | ✅ |
+| Retrieve accurate payload structure | Agentic RAG with ChromaDB + curated docs | ✅ |
 | Generate Liquid-templated config | Valid Liquid that renders to JSON | ✅ |
 | Evaluation strategy | Eval harness with 5 metrics, 12 scenarios | ✅ |
 | Observability/debugging | Debug mode, git-tracked results | ✅ |
