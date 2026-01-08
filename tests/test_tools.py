@@ -105,11 +105,22 @@ class TestValidateActionId:
 
 
 class TestRetrieveApiDocumentation:
-    """Tests for the retrieve_api_documentation tool."""
+    """Tests for the retrieve_api_documentation tool.
+    
+    Note: These tests require OPENAI_API_KEY to create embeddings for the vector store.
+    They will be skipped in CI/CD environments where the key is not set.
+    """
     
     @pytest.fixture(autouse=True)
     def setup(self):
-        """Initialize vector store before tests."""
+        """Initialize vector store before tests.
+        
+        Skips all tests in this class if OPENAI_API_KEY is not set in the environment.
+        This allows the test suite to pass in CI without requiring GitHub secrets.
+        """
+        import os
+        if not os.getenv("OPENAI_API_KEY"):
+            pytest.skip("Skipping vector store tests - OPENAI_API_KEY not set in environment")
         initialize_vector_store()
     
     def test_retrieve_slack_docs(self):
