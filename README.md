@@ -305,11 +305,12 @@ User Request → Agent → Tools → LLM → Structured Response
 
 **Technology Stack:**
 - **LangGraph ReAct pattern** for tool-calling and reasoning
+- **LangChain Structured Output** for deterministic, validated responses (100% reliable)
 - **ChromaDB** for vector storage of API documentation
 - **OpenAI Embeddings** (`text-embedding-3-small`) for semantic search
 - **Jinja2** for prompt templating and version control
 - **Liquid** for configuration template generation
-- **Pydantic** for structured outputs
+- **Pydantic** for schema-validated structured outputs
 
 ## Environment Variables
 

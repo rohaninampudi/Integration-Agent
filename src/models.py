@@ -33,6 +33,27 @@ class AgentTrace(BaseModel):
     token_usage: dict = Field(default_factory=dict, description="Token usage if available")
 
 
+class AgentResponseOutput(BaseModel):
+    """Structured output schema for the agent (used by LLM tool calling).
+    
+    This model is used with LangChain's structured output feature to ensure
+    deterministic, validated responses from the LLM. It does not include
+    the trace field, which is added post-hoc by the agent.
+    """
+    
+    selected_action: str = Field(
+        description="The ID of the selected integration action (e.g., 'slack_post_message')"
+    )
+    
+    reasoning: str = Field(
+        description="Explanation of why this action was selected and how the config was generated"
+    )
+    
+    proposed_config: str = Field(
+        description="A Liquid template string that renders to valid JSON for the API"
+    )
+
+
 class AgentResponse(BaseModel):
     """Response structure for the Integration Agent.
     

@@ -1,9 +1,10 @@
-# LangChain and LLM
-langchain>=0.3.0
+# LangChain and LLM (>=1.1.0 for structured output support)
+langchain>=1.1.0
 langchain-openai>=0.2.0
 langchain-community>=0.3.0
 langchain-text-splitters>=0.3.0
 langchain-chroma>=0.1.0
+langgraph>=0.2.0
 
 # Vector Store
 chromadb>=0.5.0

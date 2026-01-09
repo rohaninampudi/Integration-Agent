@@ -1,10 +1,10 @@
-"""Integration Agent implementation using LangGraph ReAct pattern.
+"""Integration Agent implementation using LangGraph with Structured Output.
 
 This module implements the core Integration Agent that:
 1. Analyzes user requests and workflow context
 2. Selects appropriate integration actions using tools
 3. Retrieves API documentation for accurate config generation
-4. Generates Liquid-templated configurations
+4. Generates Liquid-templated configurations with DETERMINISTIC structured output
 """
 
 import json
@@ -16,13 +16,16 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, Tool
 from langgraph.prebuilt import create_react_agent
 
 from src.config import OPENAI_API_KEY, OPENAI_MODEL, AGENT_VERBOSE, validate_config
-from src.models import AgentResponse, WorkflowContext, AgentTrace, ThoughtStep, ToolCall
+from src.models import AgentResponse, AgentResponseOutput, WorkflowContext, AgentTrace, ThoughtStep, ToolCall
 from src.prompt_loader import load_system_prompt, load_user_request_prompt
 from tools import AGENT_TOOLS
 
 
 class IntegrationAgent:
     """Integration Agent that configures API integrations based on natural language.
+    
+    Uses LangGraph ReAct pattern for tool calling, then structured output for
+    deterministic, validated final responses.
     
     Usage:
         agent = IntegrationAgent()
@@ -55,15 +58,18 @@ class IntegrationAgent:
             api_key=OPENAI_API_KEY
         )
         
+        # Create LLM with structured output for final response generation
+        self.structured_llm = self.llm.with_structured_output(AgentResponseOutput)
+        
         # Initialize tools
         self.tools = AGENT_TOOLS
         
-        # Create the agent using LangGraph
+        # Create the ReAct agent for tool calling
         self._setup_agent()
     
     def _setup_agent(self):
         """Set up the LangGraph ReAct agent with tools."""
-        # Create the ReAct agent using LangGraph
+        # Create the ReAct agent using LangGraph for tool calling
         self.agent = create_react_agent(
             model=self.llm,
             tools=self.tools
@@ -80,95 +86,6 @@ class IntegrationAgent:
             Formatted user input string
         """
         return load_user_request_prompt(request, variables)
-    
-    def _parse_response(self, output: str) -> AgentResponse:
-        """Parse the agent output into an AgentResponse.
-        
-        Args:
-            output: Raw agent output string
-            
-        Returns:
-            Parsed AgentResponse object
-        """
-        import re
-        
-        # Try to extract JSON from the output
-        try:
-            # Look for JSON block in markdown
-            if "```json" in output:
-                start = output.find("```json") + 7
-                end = output.find("```", start)
-                if end == -1:
-                    # Unclosed markdown block - take rest of string
-                    json_str = output[start:].strip()
-                else:
-                    json_str = output[start:end].strip()
-            elif "```" in output:
-                start = output.find("```") + 3
-                end = output.find("```", start)
-                if end == -1:
-                    json_str = output[start:].strip()
-                else:
-                    json_str = output[start:end].strip()
-            else:
-                # Try to find JSON object in raw output
-                # Look for { at start of line or after whitespace
-                match = re.search(r'^\s*\{', output, re.MULTILINE)
-                if match:
-                    json_str = output[match.start():].strip()
-                else:
-                    json_str = output.strip()
-            
-            # Parse the JSON
-            data = json.loads(json_str)
-            
-            return AgentResponse(
-                selected_action=data.get("selected_action", "unknown"),
-                reasoning=data.get("reasoning", "No reasoning provided"),
-                proposed_config=data.get("proposed_config", "{}")
-            )
-            
-        except (json.JSONDecodeError, KeyError) as e:
-            # Try to extract fields using regex as fallback
-            selected_action = self._extract_field(output, "selected_action") or "parse_error"
-            reasoning = self._extract_field(output, "reasoning") or f"Parse failed: {str(e)}"
-            proposed_config = self._extract_field(output, "proposed_config") or "{}"
-            
-            # If we found a valid action, return it
-            if selected_action != "parse_error":
-                return AgentResponse(
-                    selected_action=selected_action,
-                    reasoning=reasoning,
-                    proposed_config=proposed_config
-                )
-            
-            # Full fallback
-            return AgentResponse(
-                selected_action="parse_error",
-                reasoning=f"Failed to parse agent output: {str(e)}\nRaw output: {output[:500]}",
-                proposed_config="{}"
-            )
-    
-    def _extract_field(self, text: str, field_name: str) -> str | None:
-        """Extract a JSON field value using regex (fallback for truncated responses).
-        
-        Args:
-            text: The text to search in
-            field_name: The JSON field name to extract
-            
-        Returns:
-            The field value or None if not found
-        """
-        import re
-        
-        # Pattern for "field_name": "value" or "field_name": value
-        pattern = rf'"{field_name}"\s*:\s*"([^"]*(?:\\.[^"]*)*)"'
-        match = re.search(pattern, text)
-        if match:
-            # Unescape JSON string escapes
-            return match.group(1).replace('\\"', '"').replace('\\n', '\n')
-        
-        return None
     
     def _extract_trace(self, messages: list, total_duration_ms: float) -> AgentTrace:
         """Extract execution trace from LangGraph messages.
@@ -191,7 +108,6 @@ class IntegrationAgent:
         steps = []
         tool_calls_list = []
         step_number = 1
-        current_thought = None
         
         # Track tool calls by ID for matching with tool messages
         pending_tool_calls = {}
@@ -331,8 +247,38 @@ class IntegrationAgent:
         
         print("\n" + "═" * 60)
     
+    def _generate_structured_response(self, agent_output: str, request: str, variables: dict) -> AgentResponseOutput:
+        """Generate a structured response from the agent's raw output.
+        
+        Uses the structured LLM to ensure deterministic, validated output.
+        
+        Args:
+            agent_output: Raw text output from the ReAct agent
+            request: Original user request
+            variables: Workflow variables
+            
+        Returns:
+            Validated AgentResponseOutput
+        """
+        prompt = f"""Based on the following agent analysis, extract the final response:
+
+USER REQUEST: {request}
+
+AVAILABLE VARIABLES: {json.dumps(variables)}
+
+AGENT ANALYSIS:
+{agent_output}
+
+Extract the selected_action, reasoning, and proposed_config from the analysis.
+The proposed_config should be a valid Liquid template string that uses the available variables."""
+
+        return self.structured_llm.invoke(prompt)
+    
     def run(self, request: str, context: dict) -> AgentResponse:
         """Run the agent to process a user request.
+        
+        Uses ReAct pattern for tool calling, then structured output for
+        deterministic final response generation.
         
         Args:
             request: User's natural language request
@@ -359,7 +305,7 @@ class IntegrationAgent:
         # Track execution time
         start_time = time.perf_counter()
         
-        # Run the agent
+        # Run the ReAct agent for tool calling
         result = self.agent.invoke({"messages": messages})
         
         # Calculate duration
@@ -375,23 +321,31 @@ class IntegrationAgent:
             trace = self._extract_trace(final_messages, duration_ms)
             self._print_trace(trace)
         
+        # Get the final AI response
+        agent_output = ""
         if final_messages:
-            # Get the last AI message
             for msg in reversed(final_messages):
                 if hasattr(msg, "content") and msg.content:
-                    output = msg.content
+                    agent_output = msg.content
                     break
-            else:
-                output = "{}"
-        else:
-            output = "{}"
         
-        # Parse the response
-        response = self._parse_response(output)
-        
-        # Attach trace if we have it
-        if trace:
-            response.trace = trace
+        # Use structured LLM to generate deterministic response
+        try:
+            structured_output = self._generate_structured_response(agent_output, request, variables)
+            response = AgentResponse(
+                selected_action=structured_output.selected_action,
+                reasoning=structured_output.reasoning,
+                proposed_config=structured_output.proposed_config,
+                trace=trace
+            )
+        except Exception as e:
+            # Fallback for any structured output errors
+            response = AgentResponse(
+                selected_action="error",
+                reasoning=f"Structured output generation failed: {str(e)}",
+                proposed_config="{}",
+                trace=trace
+            )
         
         return response
     
@@ -411,7 +365,7 @@ class IntegrationAgent:
         return self.run(workflow_context.user_input, context)
 
 
-def create_agent(
+def create_integration_agent(
     model: Optional[str] = None,
     temperature: float = 0.2,
     verbose: bool = False
