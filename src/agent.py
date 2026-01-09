@@ -202,51 +202,6 @@ class IntegrationAgent:
         else:
             return f"Calling {tool_name} to gather more information."
     
-    def _print_trace(self, trace: AgentTrace):
-        """Print the execution trace in a human-readable format.
-        
-        Args:
-            trace: The execution trace to print
-        """
-        print("\n" + "═" * 60)
-        print("🔍 AGENT EXECUTION TRACE")
-        print("═" * 60)
-        print(f"Model: {trace.model_name}")
-        print(f"Total Duration: {trace.total_duration_ms:.0f}ms")
-        print(f"Tool Calls: {len(trace.tool_calls)}")
-        print("═" * 60)
-        
-        for step in trace.steps:
-            print(f"\n📍 Step {step.step_number}")
-            print("─" * 40)
-            
-            if step.thought:
-                print(f"💭 Thought: {step.thought}")
-            
-            if step.action:
-                print(f"🎬 Action: {step.action}")
-            
-            if step.action_input:
-                # Pretty print the input, but keep it compact
-                if isinstance(step.action_input, dict):
-                    input_str = json.dumps(step.action_input, indent=2)
-                    # Limit to 3 lines for readability
-                    lines = input_str.split('\n')
-                    if len(lines) > 5:
-                        input_str = '\n'.join(lines[:5]) + '\n   ...'
-                else:
-                    input_str = str(step.action_input)
-                print(f"📥 Input: {input_str}")
-            
-            if step.observation:
-                # Truncate long observations
-                obs = step.observation
-                if len(obs) > 300:
-                    obs = obs[:300] + "..."
-                print(f"👁️  Observation: {obs}")
-        
-        print("\n" + "═" * 60)
-    
     def _generate_structured_response(self, agent_output: str, request: str, variables: dict) -> AgentResponseOutput:
         """Generate a structured response from the agent's raw output.
         
@@ -319,7 +274,7 @@ The proposed_config should be a valid Liquid template string that uses the avail
         trace = None
         if self.verbose and final_messages:
             trace = self._extract_trace(final_messages, duration_ms)
-            self._print_trace(trace)
+            # Note: Trace printing is handled by CLI, not by the agent
         
         # Get the final AI response
         agent_output = ""
