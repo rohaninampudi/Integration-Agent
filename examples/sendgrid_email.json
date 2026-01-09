@@ -1,6 +1,5 @@
 {
-  "description": "Send an email notification via SendGrid",
-  "example_request": "Send an email notification via SendGrid about the order",
+  "user_input": "Send an email notification via SendGrid about the order",
   "variables": {
     "recipient": {
       "email": "customer@example.com",

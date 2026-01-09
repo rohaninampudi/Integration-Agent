@@ -1,6 +1,5 @@
 {
-  "description": "Create a Jira issue for bug tracking",
-  "example_request": "Create a Jira ticket for this bug",
+  "user_input": "Create a Jira ticket for this bug",
   "variables": {
     "project_key": "PROJ",
     "bug": {

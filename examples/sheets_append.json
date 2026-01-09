@@ -1,6 +1,5 @@
 {
-  "description": "Append new results to an existing Google Spreadsheet",
-  "example_request": "Add these results to the existing spreadsheet",
+  "user_input": "Add these results to the existing spreadsheet",
   "variables": {
     "scraper_results": [
       {

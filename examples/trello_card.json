@@ -1,6 +1,5 @@
 {
-  "description": "Create a Trello card for a task",
-  "example_request": "Create a Trello card for this task",
+  "user_input": "Create a Trello card for this task",
   "variables": {
     "list_id": "5f1a2b3c4d5e6f7a8b9c0d1e",
     "board_id": "5f1a2b3c4d5e6f7a8b9c0d2f",

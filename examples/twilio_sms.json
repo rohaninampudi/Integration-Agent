@@ -1,6 +1,5 @@
 {
-  "description": "Send an SMS alert via Twilio",
-  "example_request": "Send an SMS alert via Twilio about the system status",
+  "user_input": "Send an SMS alert via Twilio about the system status",
   "variables": {
     "alert_phone": "+14155551234",
     "twilio_number": "+14155559876",

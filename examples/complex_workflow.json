@@ -1,11 +1,5 @@
 {
-  "description": "Complex workflow with rich data - good for testing different scenarios",
-  "example_requests": [
-    "Create a spreadsheet with the product data",
-    "Post the summary to Slack",
-    "Create a GitHub issue for the errors",
-    "Add these products to my Notion database"
-  ],
+  "user_input": "Create a spreadsheet with the product data",
   "variables": {
     "scraper_results": [
       {

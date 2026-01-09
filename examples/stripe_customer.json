@@ -1,6 +1,5 @@
 {
-  "description": "Create a Stripe customer for a new signup",
-  "example_request": "Create a new customer in Stripe for this signup",
+  "user_input": "Create a new customer in Stripe for this signup",
   "variables": {
     "customer": {
       "email": "newuser@example.com",

@@ -829,32 +829,33 @@ python cli.py --context '{"summary": "Test", "slack_channel": "#alerts"}' "Post 
 # JSON output
 python cli.py --json "Create a GitHub issue for the error"
 
-# Use example file
+# Use example file (with explicit request)
 python cli.py --json -f examples/slack_message.json "Post the summary to Slack"
 
+# Use example file (request auto-loaded from file's user_input)
+python cli.py --json -f examples/slack_message.json
+
 # 🔍 VERBOSE MODE - Shows agent thinking (recommended for demo!)
-python cli.py --debug -f examples/slack_message.json "Post the summary to Slack"
+python cli.py --debug -f examples/slack_message.json
 ```
 
 ### Test All Integrations
 
 ```bash
-# Original 5 scenarios
-python cli.py --json -f examples/slack_message.json "Post the summary to Slack"
-python cli.py --json -f examples/github_issue.json "Create a GitHub issue for the failed scrape"
-python cli.py --json -f examples/sheets_create.json "Create a spreadsheet with my scraped product data"
-python cli.py --json -f examples/sheets_append.json "Add these results to the existing spreadsheet"
-python cli.py --json -f examples/notion_page.json "Add these products to my Notion database"
-
-# Extended 8 scenarios
-python cli.py --json -f examples/notion_block_update.json "Update the Notion block with the new status message"
-python cli.py --json -f examples/airtable_record.json "Create a record in my Airtable base with the product data"
-python cli.py --json -f examples/hubspot_contact.json "Add this lead as a contact in HubSpot"
-python cli.py --json -f examples/trello_card.json "Create a Trello card for this task"
-python cli.py --json -f examples/jira_issue.json "Create a Jira ticket for this bug"
-python cli.py --json -f examples/stripe_customer.json "Create a new customer in Stripe for this signup"
-python cli.py --json -f examples/sendgrid_email.json "Send an email notification via SendGrid about the order"
-python cli.py --json -f examples/twilio_sms.json "Send an SMS alert via Twilio about the system status"
+# All scenarios (user_input auto-loaded from files)
+python cli.py --json -f examples/slack_message.json
+python cli.py --json -f examples/github_issue.json
+python cli.py --json -f examples/sheets_create.json
+python cli.py --json -f examples/sheets_append.json
+python cli.py --json -f examples/notion_page.json
+python cli.py --json -f examples/notion_block_update.json
+python cli.py --json -f examples/airtable_record.json
+python cli.py --json -f examples/hubspot_contact.json
+python cli.py --json -f examples/trello_card.json
+python cli.py --json -f examples/jira_issue.json
+python cli.py --json -f examples/stripe_customer.json
+python cli.py --json -f examples/sendgrid_email.json
+python cli.py --json -f examples/twilio_sms.json
 ```
 
 ### Run Tests & Evaluations

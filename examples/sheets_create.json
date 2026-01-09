@@ -1,6 +1,5 @@
 {
-  "description": "Create a new Google Spreadsheet with scraped product data",
-  "example_request": "Create a spreadsheet with my scraped product data",
+  "user_input": "Create a spreadsheet with my scraped product data",
   "variables": {
     "scraper_results": [
       {

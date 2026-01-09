@@ -374,7 +374,18 @@ Examples:
             # Parse context
             if args.context_file:
                 with open(args.context_file) as f:
-                    variables = json.load(f)
+                    context_data = json.load(f)
+                    # Support both formats:
+                    # 1. INSTRUCTIONS.MD format: {"user_input": "...", "variables": {...}}
+                    # 2. Direct variables: {...} (backward compatible)
+                    if "variables" in context_data:
+                        variables = context_data["variables"]
+                        # If user_input is in file but no request arg, use it
+                        if not args.request and "user_input" in context_data:
+                            args.request = context_data["user_input"]
+                    else:
+                        # Legacy format: entire JSON is variables
+                        variables = context_data
             else:
                 variables = json.loads(args.context)
             

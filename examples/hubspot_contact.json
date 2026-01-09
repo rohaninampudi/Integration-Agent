@@ -1,6 +1,5 @@
 {
-  "description": "Create a HubSpot contact from lead data",
-  "example_request": "Add this lead as a contact in HubSpot",
+  "user_input": "Add this lead as a contact in HubSpot",
   "variables": {
     "lead": {
       "email": "john.smith@acmecorp.com",

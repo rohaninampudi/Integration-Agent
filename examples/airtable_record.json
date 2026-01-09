@@ -1,6 +1,5 @@
 {
-  "description": "Create a record in Airtable base",
-  "example_request": "Create a record in my Airtable base with the product data",
+  "user_input": "Create a record in my Airtable base with the product data",
   "variables": {
     "base_id": "appXYZ123456789",
     "table_name": "Products",

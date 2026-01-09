@@ -126,7 +126,17 @@ python cli.py --verbose -f examples/sheets_create.json "Create a spreadsheet"
 
 #### 📁 Example Workflows
 
-The `examples/` directory contains pre-configured workflow contexts for all major use cases:
+The `examples/` directory contains pre-configured workflow contexts for all 13 integrations. Each file follows the INSTRUCTIONS.MD format:
+
+```json
+{
+  "user_input": "Post the summary to Slack",
+  "variables": {
+    "summary": "...",
+    "slack_channel": "#alerts"
+  }
+}
+```
 
 | File | Scenario | What It Tests |
 |------|----------|---------------|
@@ -135,7 +145,19 @@ The `examples/` directory contains pre-configured workflow contexts for all majo
 | `sheets_create.json` | Create new spreadsheet | Array loops, product data |
 | `sheets_append.json` | Append to existing sheet | Action discrimination (has `spreadsheet_id`) |
 | `notion_page.json` | Add to Notion database | Complex objects, nested properties |
-| `complex_workflow.json` | Multi-purpose context | Multiple scenarios with rich data |
+| `notion_block_update.json` | Update Notion block | Block ID, content updates |
+| `airtable_record.json` | Create Airtable record | Nested objects, tags array |
+| `hubspot_contact.json` | Create HubSpot contact | CRM contact properties |
+| `trello_card.json` | Create Trello card | Card creation with checklist |
+| `jira_issue.json` | Create Jira issue | Bug tracking, labels |
+| `stripe_customer.json` | Create Stripe customer | Payment customer metadata |
+| `sendgrid_email.json` | Send email via SendGrid | Email templates, order data |
+| `twilio_sms.json` | Send SMS via Twilio | SMS alerts, system monitoring |
+
+**Usage**: With the new format, you can omit the request from the command line—it's auto-loaded from `user_input`:
+```bash
+python cli.py --json -f examples/slack_message.json  # Request auto-loaded!
+```
 
 **See `examples/README.md` for complete usage guide and expected outputs.**
 
