@@ -28,11 +28,8 @@ Run any example with the CLI (request auto-loaded from file):
 # Basic usage (user_input from file)
 python cli.py -f examples/slack_message.json
 
-# With debug mode (shows agent reasoning)
+# With debug mode (shows agent reasoning trace)
 python cli.py --debug -f examples/github_issue.json
-
-# Verbose output (shows full config)
-python cli.py --verbose -f examples/sheets_create.json
 
 # JSON output (for programmatic use)
 python cli.py --json -f examples/slack_message.json
@@ -74,7 +71,7 @@ python cli.py --debug -f examples/github_issue.json
 
 ### 3. Google Sheets Create (Array Loop)
 ```bash
-python cli.py --debug --verbose -f examples/sheets_create.json
+python cli.py --debug -f examples/sheets_create.json
 ```
 
 ### 4. Google Sheets Append (Discrimination Test)
@@ -119,14 +116,15 @@ Post the summary to Slack
    - Thought → Action → Observation loop
    - Tool calls and their results
    - Total execution time
+   - Full configuration output (no truncation)
 
-2. **Verbose Mode** (`--verbose`): Shows full config without truncation
-
-3. **Action Selection**: How the agent chooses between similar actions
+2. **Action Selection**: How the agent chooses between similar actions
    - `sheets_create` vs `sheets_append` based on context
 
-4. **Liquid Templates**: How variables are interpolated
+3. **Liquid Templates**: How variables are interpolated
    - Simple: `{{ summary }}`
    - Arrays: `{% for product in scraper_results %}`
 
-5. **JSON Output** (`--json`): Machine-readable output for integration
+4. **JSON Output** (`--json`): Machine-readable output for integration
+
+5. **Auto-loaded Requests**: No need to type the request—it's in the file!

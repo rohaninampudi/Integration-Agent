@@ -72,8 +72,8 @@ export OPENAI_API_KEY="your-key-here"
 Try the agent with our pre-built examples:
 
 ```bash
-# Test with a Slack message example
-python cli.py --debug -f examples/slack_message.json "Post the summary to Slack"
+# Test with a Slack message example (request auto-loaded from file)
+python cli.py --debug -f examples/slack_message.json
 
 # See the agent's reasoning and generated configuration!
 ```
@@ -82,47 +82,64 @@ python cli.py --debug -f examples/slack_message.json "Post the summary to Slack"
 
 #### Quick Start with Example Workflows
 
-We provide **ready-to-use example workflows** in the `examples/` directory for easy testing:
+We provide **ready-to-use example workflows** in the `examples/` directory with `user_input` pre-configured:
 
 ```bash
 # Example 1: Slack Message (simple variables)
-python cli.py --debug -f examples/slack_message.json "Post the summary to Slack"
+python cli.py --debug -f examples/slack_message.json
 
 # Example 2: GitHub Issue (error tracking)
-python cli.py --debug -f examples/github_issue.json "Create a GitHub issue for the failed scrape"
+python cli.py --debug -f examples/github_issue.json
 
 # Example 3: Google Sheets Create (array loops)
-python cli.py --debug -f examples/sheets_create.json "Create a spreadsheet with my scraped product data"
+python cli.py --debug -f examples/sheets_create.json
 
 # Example 4: Google Sheets Append (discrimination test)
-python cli.py --debug -f examples/sheets_append.json "Add these results to the existing spreadsheet"
+python cli.py --debug -f examples/sheets_append.json
 
 # Example 5: Notion Database
-python cli.py --debug -f examples/notion_page.json "Add these products to my Notion database"
+python cli.py --debug -f examples/notion_page.json
 ```
 
-**💡 Tip**: Use `--debug` flag to see the agent's step-by-step reasoning process!
+**💡 Tip**: 
+- Use `--debug` flag to see the agent's step-by-step reasoning process
+- The `user_input` is auto-loaded from each example file, no need to specify it!
+- You can override the file's `user_input` by passing a request as the last argument
 
 See `examples/README.md` for more details and additional test scenarios.
 
-#### Other CLI Usage
+#### CLI Usage
 
 ```bash
-# Simple request (no context file)
-python cli.py "Post the summary to Slack"
-
-# Inline context with --context flag
-python cli.py --context '{"summary": "Test message", "slack_channel": "#alerts"}' "Post to Slack"
+# Using example files (user_input auto-loaded)
+python cli.py -f examples/slack_message.json
 
 # JSON output (for programmatic use)
-python cli.py --json -f examples/slack_message.json "Post the summary to Slack"
+python cli.py --json -f examples/slack_message.json
+
+# Debug mode (shows agent reasoning trace)
+python cli.py --debug -f examples/slack_message.json
+
+# Override the file's user_input
+python cli.py -f examples/slack_message.json "Post a different message"
+
+# Simple request with inline context
+python cli.py --context '{"summary": "Test", "slack_channel": "#alerts"}' "Post to Slack"
 
 # Interactive mode
 python cli.py --interactive
 
-# Verbose output (shows full config)
-python cli.py --verbose -f examples/sheets_create.json "Create a spreadsheet"
+# Interactive mode with debug tracing
+python cli.py --interactive --debug
 ```
+
+**Available Flags:**
+- `-f, --file` - Load workflow context from JSON file
+- `-c, --context` - Provide workflow variables as JSON string
+- `--debug` - Show agent's step-by-step reasoning and tool calls
+- `--json` - Output response as JSON (default shows formatted output)
+- `--model` - Override model (default: gpt-5)
+- `-i, --interactive` - Start interactive REPL mode
 
 #### 📁 Example Workflows
 
@@ -154,9 +171,13 @@ The `examples/` directory contains pre-configured workflow contexts for all 13 i
 | `sendgrid_email.json` | Send email via SendGrid | Email templates, order data |
 | `twilio_sms.json` | Send SMS via Twilio | SMS alerts, system monitoring |
 
-**Usage**: With the new format, you can omit the request from the command line—it's auto-loaded from `user_input`:
+**Usage**: The `user_input` is auto-loaded from each file:
 ```bash
-python cli.py --json -f examples/slack_message.json  # Request auto-loaded!
+# Request is loaded from file's user_input field
+python cli.py -f examples/slack_message.json
+
+# Or override with your own request
+python cli.py -f examples/slack_message.json "Post a custom message"
 ```
 
 **See `examples/README.md` for complete usage guide and expected outputs.**
@@ -264,7 +285,7 @@ The agent includes comprehensive tracing to show its reasoning process:
 
 ```bash
 # Enable debug mode to see the agent's thought process
-python cli.py --debug -f examples/slack_message.json "Post to Slack"
+python cli.py --debug -f examples/slack_message.json
 ```
 
 **Debug output shows:**
@@ -273,6 +294,12 @@ python cli.py --debug -f examples/slack_message.json "Post to Slack"
 - 📥 **Input**: Arguments passed to the tool
 - 👁️ **Observation**: Result from the tool
 - ⏱️ **Timing**: Duration and step count
+
+**Output Modes:**
+- **Default**: Formatted output with colors and agent response
+- **`--json`**: Clean JSON output (for programmatic use)
+- **`--debug`**: Full reasoning trace + formatted output
+- **`--debug --json`**: Reasoning trace + JSON output
 
 This ReAct (Reasoning + Acting) trace makes it easy to:
 - Understand agent decisions

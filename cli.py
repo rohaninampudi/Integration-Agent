@@ -7,9 +7,8 @@ configure API integrations based on natural language requests.
 Usage:
     python cli.py "Post the summary to Slack"
     python cli.py --context '{"summary": "test"}' "Post to Slack"
-    python cli.py --verbose "Create a GitHub issue"
+    python cli.py --debug -f examples/slack_message.json  # Shows reasoning trace
     python cli.py --interactive
-    python cli.py --debug "Post to Slack"  # Shows agent reasoning trace
 """
 
 import argparse
@@ -110,12 +109,11 @@ def print_header():
 """)
 
 
-def print_response(response: AgentResponse, verbose: bool = False, show_trace: bool = False):
+def print_response(response: AgentResponse, show_trace: bool = False):
     """Pretty print an agent response.
     
     Args:
         response: The AgentResponse to print
-        verbose: Whether to show full details
         show_trace: Whether to display the execution trace
     """
     # Show trace first if available and requested
@@ -149,24 +147,16 @@ def print_response(response: AgentResponse, verbose: bool = False, show_trace: b
     
     print(f"\n{Colors.BLUE}📝 Proposed Configuration (Liquid Template):{Colors.RESET}")
     
-    if verbose:
-        # Show full config with syntax highlighting attempt
-        try:
-            # Try to pretty print if it's valid JSON
-            config_parsed = json.loads(response.proposed_config.replace('{{', '__LBRACE__').replace('}}', '__RBRACE__'))
-            config_str = json.dumps(config_parsed, indent=2).replace('__LBRACE__', '{{').replace('__RBRACE__', '}}')
-            for line in config_str.split('\n'):
-                print(f"   {line}")
-        except:
-            print(f"   {response.proposed_config}")
-    else:
-        # Show truncated if very long
-        config = response.proposed_config
-        if len(config) > 200:
-            print(f"   {config[:200]}...")
-            print(f"   {Colors.DIM}(truncated, use --verbose to see full config){Colors.RESET}")
-        else:
-            print(f"   {config}")
+    # Always show full config (no truncation)
+    try:
+        # Try to pretty print if it's valid JSON
+        config_parsed = json.loads(response.proposed_config.replace('{{', '__LBRACE__').replace('}}', '__RBRACE__'))
+        config_str = json.dumps(config_parsed, indent=2).replace('__LBRACE__', '{{').replace('__RBRACE__', '}}')
+        for line in config_str.split('\n'):
+            print(f"   {line}")
+    except:
+        # If not valid JSON, just print as-is
+        print(f"   {response.proposed_config}")
     
     # Show trace summary if available but not fully displayed
     if response.trace and not show_trace:
@@ -175,12 +165,11 @@ def print_response(response: AgentResponse, verbose: bool = False, show_trace: b
     print("\n" + "─" * 60)
 
 
-def run_interactive(agent, verbose: bool = False, debug: bool = False):
+def run_interactive(agent, debug: bool = False):
     """Run the agent in interactive mode.
     
     Args:
         agent: IntegrationAgent instance
-        verbose: Enable verbose output
         debug: Enable debug mode (shows reasoning trace)
     """
     print(f"\n{Colors.BOLD}🎤 Interactive Mode{Colors.RESET}")
@@ -255,7 +244,7 @@ def run_interactive(agent, verbose: bool = False, debug: bool = False):
             print(f"\n{Colors.YELLOW}⏳ Processing...{Colors.RESET}")
             context = {"variables": variables}
             response = agent.run(request, context)
-            print_response(response, verbose, show_trace=show_trace)
+            print_response(response, show_trace=show_trace)
             print()
             
         except KeyboardInterrupt:
@@ -274,8 +263,8 @@ def main():
 Examples:
   %(prog)s "Post the summary to Slack"
   %(prog)s --context '{"summary": "test", "slack_channel": "#alerts"}' "Post to Slack"
+  %(prog)s --debug -f examples/slack_message.json
   %(prog)s --interactive
-  %(prog)s --verbose "Create a GitHub issue for the error"
         """
     )
     
@@ -305,12 +294,6 @@ Examples:
     )
     
     parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Enable verbose output"
-    )
-    
-    parser.add_argument(
         "--debug",
         action="store_true",
         help="Enable debug mode (shows agent reasoning steps)"
@@ -337,10 +320,11 @@ Examples:
     
     args = parser.parse_args()
     
-    # Validate we have either a request or interactive mode
-    if not args.request and not args.interactive:
+    # Validate we have either a request, interactive mode, or a context file
+    # (context file may contain user_input)
+    if not args.request and not args.interactive and not args.context_file:
         parser.print_help()
-        print("\nError: Provide a request or use --interactive mode")
+        print("\nError: Provide a request, use --interactive mode, or provide a context file with user_input")
         sys.exit(1)
     
     # Print header
@@ -369,7 +353,7 @@ Examples:
                 print(f"{Colors.CYAN}✓ Debug mode enabled - will show reasoning trace{Colors.RESET}")
         
         if args.interactive:
-            run_interactive(agent, args.verbose, debug=args.debug)
+            run_interactive(agent, debug=args.debug)
         else:
             # Parse context
             if args.context_file:
@@ -388,6 +372,11 @@ Examples:
                         variables = context_data
             else:
                 variables = json.loads(args.context)
+            
+            # Final validation: ensure we have a request
+            if not args.request:
+                print("❌ Error: No request provided. Either pass a request as an argument or include 'user_input' in your context file.")
+                sys.exit(1)
             
             context = {"variables": variables}
             
@@ -416,7 +405,7 @@ Examples:
                     }
                 print(json.dumps(output, indent=2))
             else:
-                print_response(response, args.verbose, show_trace=args.debug)
+                print_response(response, show_trace=args.debug)
             
     except ValueError as e:
         print(f"❌ Configuration Error: {e}")

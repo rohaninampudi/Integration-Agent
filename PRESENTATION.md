@@ -835,7 +835,7 @@ python cli.py --json -f examples/slack_message.json "Post the summary to Slack"
 # Use example file (request auto-loaded from file's user_input)
 python cli.py --json -f examples/slack_message.json
 
-# 🔍 VERBOSE MODE - Shows agent thinking (recommended for demo!)
+# 🔍 DEBUG MODE - Shows agent thinking
 python cli.py --debug -f examples/slack_message.json
 ```
 
