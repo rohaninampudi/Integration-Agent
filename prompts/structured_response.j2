@@ -1,0 +1,11 @@
+Based on the following agent analysis, extract the final response:
+
+USER REQUEST: {{ request }}
+
+AVAILABLE VARIABLES: {{ variables | tojson }}
+
+AGENT ANALYSIS:
+{{ agent_output }}
+
+Extract the selected_action, reasoning, and proposed_config from the analysis.
+The proposed_config should be a valid Liquid template string that uses the available variables.

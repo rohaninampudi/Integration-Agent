@@ -219,8 +219,9 @@ Integration-Agent/
 │   ├── get_actions.py     # Action catalog tool
 │   └── retrieve_docs.py   # API documentation retrieval
 ├── prompts/
-│   ├── system_prompt.j2   # Main system prompt with few-shot examples
-│   └── config_generation.j2
+│   ├── system_prompt.j2       # Main system prompt with few-shot examples
+│   ├── user_request.j2        # User input formatting
+│   └── structured_response.j2 # Structured output extraction
 ├── data/
 │   ├── actions.json       # Integration action catalog
 │   ├── api_docs/          # Curated API documentation

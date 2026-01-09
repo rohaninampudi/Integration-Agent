@@ -138,7 +138,7 @@ Integration-Agent/
 ├── prompts/
 │   ├── system_prompt.j2       # System prompt + few-shot examples
 │   ├── user_request.j2        # User input formatting
-│   └── config_generation.j2   # Config generation instructions
+│   └── structured_response.j2 # Structured output extraction prompt
 ├── data/
 │   ├── actions.json           # 13 integration actions
 │   └── api_docs/              # 12 curated API documentation files

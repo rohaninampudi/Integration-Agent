@@ -17,7 +17,7 @@ from langgraph.prebuilt import create_react_agent
 
 from src.config import OPENAI_API_KEY, OPENAI_MODEL, AGENT_VERBOSE, validate_config
 from src.models import AgentResponse, AgentResponseOutput, WorkflowContext, AgentTrace, ThoughtStep, ToolCall
-from src.prompt_loader import load_system_prompt, load_user_request_prompt
+from src.prompt_loader import load_system_prompt, load_user_request_prompt, load_structured_response_prompt
 from tools import AGENT_TOOLS
 
 
@@ -215,18 +215,7 @@ class IntegrationAgent:
         Returns:
             Validated AgentResponseOutput
         """
-        prompt = f"""Based on the following agent analysis, extract the final response:
-
-USER REQUEST: {request}
-
-AVAILABLE VARIABLES: {json.dumps(variables)}
-
-AGENT ANALYSIS:
-{agent_output}
-
-Extract the selected_action, reasoning, and proposed_config from the analysis.
-The proposed_config should be a valid Liquid template string that uses the available variables."""
-
+        prompt = load_structured_response_prompt(agent_output, request, variables)
         return self.structured_llm.invoke(prompt)
     
     def run(self, request: str, context: dict) -> AgentResponse:

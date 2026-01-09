@@ -32,32 +32,6 @@ def load_system_prompt(variables: dict) -> str:
     return template.render(variables=variables)
 
 
-def load_config_prompt(
-    api_docs: str,
-    user_request: str,
-    selected_action: str,
-    variables: dict
-) -> str:
-    """Load and render the config generation prompt.
-    
-    Args:
-        api_docs: Retrieved API documentation
-        user_request: The user's request
-        selected_action: The selected integration action ID
-        variables: Workflow context variables dict
-        
-    Returns:
-        Rendered config generation prompt string
-    """
-    template = _env.get_template("config_generation.j2")
-    return template.render(
-        api_docs=api_docs,
-        user_request=user_request,
-        selected_action=selected_action,
-        variables=variables
-    )
-
-
 def get_prompt_templates() -> list[str]:
     """Get list of available prompt template names."""
     return [f.name for f in PROMPTS_DIR.glob("*.j2")]
@@ -75,6 +49,25 @@ def load_user_request_prompt(request: str, variables: dict) -> str:
     """
     template = _env.get_template("user_request.j2")
     return template.render(request=request, variables=variables)
+
+
+def load_structured_response_prompt(agent_output: str, request: str, variables: dict) -> str:
+    """Load and render the structured response extraction prompt.
+    
+    Args:
+        agent_output: Raw text output from the ReAct agent
+        request: Original user request
+        variables: Workflow variables dict
+        
+    Returns:
+        Rendered structured response prompt string
+    """
+    template = _env.get_template("structured_response.j2")
+    return template.render(
+        agent_output=agent_output,
+        request=request,
+        variables=variables
+    )
 
 
 def render_template(template_name: str, **kwargs) -> str:
