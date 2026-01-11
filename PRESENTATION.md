@@ -335,18 +335,16 @@ All prompts are **Jinja2 templates** stored as files, enabling:
 
 📁 **File**: [`prompts/system_prompt.j2`](prompts/system_prompt.j2)
 
-```jinja2
-You are an Integration Agent that helps users configure API integrations.
+The system prompt includes several key sections:
 
-## Liquid Template Syntax Guide
-Your `proposed_config` MUST be a valid Liquid template string...
+**1. Liquid Template Syntax Guide**
+- Teaches the agent how to use `{{ variable }}` syntax
+- Shows loop patterns: `{% for item in array %}...{% endfor %}`
+- Explains JSON formatting (commas, quotes, data types)
 
-## Few-Shot Examples
+**2. Few-Shot Examples**
 
-### Example 1: Posting to Slack
-**Request:** "Post the summary to Slack"
-**Variables:** `summary`, `slack_channel`
-
+Example 1 - Slack Message (simple variables):
 ```json
 {
   "selected_action": "slack_post_message",
@@ -355,14 +353,20 @@ Your `proposed_config` MUST be a valid Liquid template string...
 }
 ```
 
-### Example 2: Creating a GitHub Issue
-...
-
-## Rules
-1. You MUST call `get_available_actions` tool first
-2. You MUST call `retrieve_api_documentation` before generating config
-3. The `proposed_config` must be a STRING containing Liquid template
+Example 2 - GitHub Issue (string interpolation):
+```json
+{
+  "selected_action": "github_create_issue",
+  "reasoning": "User wants to create a GitHub issue to track a failed scrape...",
+  "proposed_config": "{ \"title\": \"Scrape Failed\", \"body\": \"{{ summary }}\", \"labels\": [\"bug\"] }"
+}
 ```
+
+**3. Rules**
+1. MUST call `get_available_actions` tool first
+2. MUST call `retrieve_api_documentation` before generating config
+3. `proposed_config` must be a STRING containing Liquid template
+4. When rendered, must produce valid JSON
 
 **Why Few-Shot Examples?** They're critical for teaching the model:
 - Correct JSON output structure
@@ -591,45 +595,6 @@ on:
 | v3 | Extended to all integrations | 12 | **100%** | 8 new API docs + scenarios |
 | v4 (current) | Structured output | 12 | **100%** | Deterministic response generation |
 
-### Comparison: v1 → v2 (The Parse Error Fix)
-
-**The Problem (v1)**: GitHub issue scenario failed with 75% action accuracy
-
-```
-Scenario 2: "Create a GitHub issue for the failed scrape"
-Expected: github_create_issue
-Actual:   parse_error  ❌
-
-Error: "Failed to parse agent output: Expecting value: line 1 column 1 (char 0)"
-Raw output (truncated by LLM): 
-  "...The configuration is a Liquid template t"  <-- cut off mid-sentence!
-```
-
-The LLM response was too long and got truncated, causing JSON parsing to fail entirely.
-
-**The Fix (v2)**: Added fallback regex extraction in `src/agent.py`:
-
-```python
-def _extract_field(self, text: str, field_name: str) -> str | None:
-    """Extract field value from potentially truncated JSON."""
-    # Try to find the field even in malformed/truncated JSON
-    pattern = rf'"{field_name}"\s*:\s*"([^"]*(?:\\.[^"]*)*)"'
-    match = re.search(pattern, text)
-    return match.group(1) if match else None
-
-def _parse_agent_output(self, raw_output: str) -> AgentResponse:
-    try:
-        # First try normal JSON parsing
-        return json.loads(raw_output)
-    except json.JSONDecodeError:
-        # Fallback: extract fields individually from truncated response
-        selected_action = self._extract_field(raw_output, "selected_action")
-        reasoning = self._extract_field(raw_output, "reasoning") 
-        # ... construct response from extracted fields
-```
-
-**Result**: Action accuracy improved from 75% → 100%
-
 ### Version History: What Improved Each Iteration
 
 #### Baseline → v1: First Real Agent
@@ -642,7 +607,9 @@ def _parse_agent_output(self, raw_output: str) -> AgentResponse:
 | Renders to JSON | 100% | 100% | = |
 
 **What Changed**: Moved from mock agent (keyword matching) to real LLM agent  
-**Problem Discovered**: LLM responses could be truncated, causing JSON parsing to fail
+**Problem Discovered**: The LLM was generating responses that exceeded token limits, and `proposed_config` (being last in the JSON) got truncated. This was NOT a bug in our code—the OpenAI API was cutting off long responses.
+
+📁 **Evidence**: See [`results/eval_real_v1.json`](results/eval_real_v1.json) (scenario 2) - raw output ends with `"...The configuration is a Liquid template t"` (cut off mid-sentence!)
 
 ---
 
@@ -658,6 +625,17 @@ def _parse_agent_output(self, raw_output: str) -> AgentResponse:
 
 **What Changed**: Added `_extract_field()` regex fallback for truncated JSON  
 **Improvement**: Even if JSON is incomplete, we can extract `selected_action` correctly
+
+**Why Renders to JSON dropped**: An ironic side effect! In v1, parse failures returned `{}` (valid JSON). In v2, the regex fallback extracted the *actual* truncated `proposed_config` value.
+
+📁 **Smoking Gun**: See [`results/eval_real_v2.json`](results/eval_real_v2.json) (scenario 2):
+```json
+"actual_action": "github_create_issue",  // ✅ Regex fallback worked!
+"proposed_config": "{ \\",               // ❌ Severely truncated - not valid JSON
+"renders_to_json": false
+```
+
+The LLM generated `proposed_config` last in the response, so it was the first field to get cut off by token limits.
 
 ---
 
@@ -692,6 +670,8 @@ def _parse_agent_output(self, raw_output: str) -> AgentResponse:
 - Replaced fragile JSON text parsing with LangChain's `with_structured_output()`
 - Hybrid approach: ReAct for tool calling + structured output for final response
 - Removed ~70 lines of parsing code, replaced with ~5 lines
+
+**Why This Solved Truncation**: Structured output forces the LLM to generate responses conforming to a Pydantic schema. The model knows exactly what fields are needed and outputs them completely—no more truncation issues!
 
 ```python
 # OLD (v3): Fragile text parsing
@@ -745,70 +725,125 @@ v4        12         100%     100%     100%    Structured output (current)
 
 ---
 
-## 7. Key Tradeoffs & Challenges
+## 7. Key Tradeoffs
 
-### Tradeoff 1: RAG vs Web Search
-
-| Approach | Pros | Cons |
-|----------|------|------|
-| **RAG (chosen)** | Fast, consistent, controllable | Limited to curated docs |
-| **Web Search** | Always up-to-date | Slower, noisy results |
-
-**Decision**: RAG for accuracy and speed. Web search could be added as fallback.
-
-### Tradeoff 2: Liquid Validation
+### Tradeoff 1: RAG vs Web Search for API Documentation
 
 | Approach | Pros | Cons |
 |----------|------|------|
-| **Runtime validation** | Catches all errors | Requires workflow context |
-| **Syntax-only check** | Fast, context-free | Misses render errors |
+| **RAG (chosen)** | Fast (~2s), consistent, controllable quality | Limited to pre-curated docs |
+| **Web Search** | Always current, no maintenance | Slower, noisy, unpredictable |
 
-**Decision**: Both — check syntax first, then validate rendering with `python-liquid`.
+**Decision**: RAG for reliability. Web search could be a fallback for unknown APIs.
 
-### Tradeoff 3: Payload Validation Depth
+---
+
+### Tradeoff 2: Tool-Augmented Agent vs Direct LLM Generation
 
 | Approach | Pros | Cons |
 |----------|------|------|
-| **JSON validity only (current)** | Simple, fast | Doesn't catch wrong field names |
-| **Schema validation** | Catches API errors early | Requires schema per action |
+| **ReAct with tools (chosen)** | Grounded in real data, transparent reasoning, retrieves docs on-demand | More LLM calls, higher latency |
+| **Single-shot LLM** | Fast, simple | Hallucinates APIs, can't access current docs |
+| **Fine-tuned model** | Fast inference, specialized | Expensive to train, hard to update |
 
-**Decision**: JSON validity for now, with schema validation as future improvement.
+**Decision**: ReAct agent with two tools:
+- `get_available_actions` — LLM sees real action metadata, picks based on intent
+- `retrieve_api_documentation` — LLM fetches only the docs it needs
 
-### Challenge 1: Liquid Syntax in Prompts
+**Why this matters**: The agent *reasons* about which action fits, then *retrieves* relevant docs before generating config. This prevents hallucination and ensures output matches actual API specs.
 
-**Problem**: Jinja2 (our prompt templating) and Liquid (output format) use similar syntax (`{{ }}`).
+**Tradeoff accepted**: 2-3 tool calls add ~5-10s latency, but accuracy is worth it for an integration builder where wrong payloads = failed API calls.
 
-**Solution**: Escape Liquid syntax in Jinja2 templates:
-```jinja2
-"proposed_config": "{ \"channel\": \"{{ "{{" }} slack_channel {{ "}}" }}\" }"
-```
+---
 
-### Challenge 2: Long Agent Responses
+### Tradeoff 3: Structured Output vs Free-form Parsing
 
-**Problem**: GPT-5 sometimes generates very long responses that get truncated.
+| Approach | Pros | Cons |
+|----------|------|------|
+| **Structured output (chosen)** | Guaranteed valid JSON, no truncation | Requires schema definition |
+| **Free-form + regex** | Flexible output | Truncation issues, brittle parsing |
 
-**Solution**: Implemented robust parsing with fallback regex extraction for truncated JSON.
+**Decision**: Started with free-form (v1-v2), migrated to structured output (v4) after hitting truncation issues.
+
+---
+
+### Tradeoff 4: Payload Validation Depth
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| **JSON validity (current)** | Simple, API-agnostic | Doesn't catch wrong field names |
+| **Schema validation** | Catches API errors early | Requires maintaining schema per action |
+
+**Decision**: JSON validity for MVP. Schema validation is a future improvement.
 
 ---
 
 ## 8. Future Improvements
 
-With more time, I would explore:
+### Performance Optimization
 
-### Short-term
-- [ ] Add payload validation against API schemas (required fields, types)
-- [ ] Add web search as fallback for missing API docs
-- [ ] Implement response caching for repeated queries
+**Current state**: Average latency is ~38s, with complex scenarios reaching 2+ minutes (see `results/eval_full_12scenarios.json`).
 
-### Medium-term
-- [ ] Add conversation memory for multi-turn refinement
-- [ ] Build eval result visualization dashboard
-- [ ] Create Langfuse/LangSmith integration for tracing
+| Improvement | Impact | Effort |
+|-------------|--------|--------|
+| **Reduce tool calls** | Skip `get_available_actions` when action is obvious from context | High / Low |
+| **Parallel doc retrieval** | Fetch multiple API docs simultaneously | Medium / Low |
+| **Response caching** | Cache repeated queries with same context hash | Medium / Medium |
+| **Smaller model for action selection** | Use GPT-4o-mini for tool calls, GPT-4o for config generation | High / Medium |
 
-### Long-term
-- [ ] Automated API doc scraping and indexing
-- [ ] A/B testing framework for prompt variants
-- [ ] User feedback loop for continuous improvement
+### UX Improvements
+
+| Improvement | Impact | Effort |
+|-------------|--------|--------|
+| **Token streaming** | Stream response to client for responsive UI instead of waiting for full completion | High / Low |
+| **Progress indicators** | Show "Selecting action..." → "Retrieving docs..." → "Generating config..." | Medium / Low |
+
+### Framework Migration: LangGraph → AI SDK
+
+Consider migrating from LangGraph to Vercel AI SDK:
+
+| Benefit | Details |
+|---------|---------|
+| **Lighter footprint** | No heavy LangChain dependencies (~50MB → ~5MB) |
+| **Native streaming** | Built-in `streamText()` with React hooks |
+| **Simpler mental model** | No graph state machine, just async functions |
+| **Edge-compatible** | Runs on Vercel Edge, Cloudflare Workers |
+| **TypeScript-first** | Better type inference, no Python-to-TS friction |
+
+### Validation & Reliability
+
+| Improvement | Details |
+|-------------|---------|
+| **Payload schema validation** | Validate `proposed_config` against API schemas (required fields, types, enums) before returning to user |
+| **Web search fallback** | For missing/outdated API docs, fall back to web search |
+| **Retry with backoff** | Handle transient LLM failures gracefully |
+
+### Evaluation Improvements
+
+**Current gaps**: One-shot runs (non-deterministic), no payload field validation, no expected output comparison.
+
+| Improvement | Details |
+|-------------|---------|
+| **Multi-run determinism** | Run each scenario 3-5x, report pass rate (e.g., "4/5 correct") to surface flaky prompts |
+| **Required field validation** | Parse API docs for required fields, verify they appear in rendered config |
+| **LLM-as-judge** | Use GPT-4 to score config quality: "Does this payload correctly implement the user's intent?" (1-5 scale) |
+| **Golden output comparison** | Store expected `proposed_config` per scenario, compute similarity score |
+| **Eval dashboard** | Visualize metrics over time, compare prompt versions |
+
+### Prompt Engineering
+
+| Improvement | Details |
+|-------------|---------|
+| **A/B testing framework** | Run same scenarios against prompt variants, compare metrics automatically |
+| **Prompt versioning** | Track prompt changes with git-like history, rollback on regression |
+
+### Continuous Improvement
+
+| Improvement | Details |
+|-------------|---------|
+| **User feedback loop** | Collect thumbs up/down on generated configs, use for fine-tuning dataset |
+| **Failure analysis pipeline** | Auto-categorize failures (wrong action, invalid Liquid, missing fields) for targeted fixes |
+| **Shadow mode** | Run new prompts in parallel with production, compare before rollout |
 
 ---
 
