@@ -6,7 +6,7 @@ This directory contains example workflow context files for testing and demoing t
 
 ## File Format
 
-Each example file follows the INSTRUCTIONS.MD workflow context format:
+Each example file uses the standard workflow context format:
 
 ```json
 {

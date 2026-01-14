@@ -80,7 +80,7 @@ class EvalHarness:
         harness.save_results(results, "eval_v1.json")
     """
     
-    # Default test scenarios from INSTRUCTIONS.MD
+    # Default test scenarios covering all integrations
     DEFAULT_SCENARIOS = [
         TestScenario(
             request="Post the summary to Slack",

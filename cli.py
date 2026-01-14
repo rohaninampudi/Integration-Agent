@@ -360,7 +360,7 @@ Examples:
                 with open(args.context_file) as f:
                     context_data = json.load(f)
                     # Support both formats:
-                    # 1. INSTRUCTIONS.MD format: {"user_input": "...", "variables": {...}}
+                    # 1. Standard format: {"user_input": "...", "variables": {...}}
                     # 2. Direct variables: {...} (backward compatible)
                     if "variables" in context_data:
                         variables = context_data["variables"]

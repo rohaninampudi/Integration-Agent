@@ -143,7 +143,7 @@ python cli.py --interactive --debug
 
 #### 📁 Example Workflows
 
-The `examples/` directory contains pre-configured workflow contexts for all 13 integrations. Each file follows the INSTRUCTIONS.MD format:
+The `examples/` directory contains pre-configured workflow contexts for all 13 integrations. Each file uses the standard workflow context format:
 
 ```json
 {

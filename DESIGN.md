@@ -1,4 +1,4 @@
-# Integration Agent — Implementation Walkthrough
+# Integration Agent — Design Document
 
 > A prototype AI agent that helps users configure API integration steps using natural language and workflow context.
 
@@ -14,7 +14,6 @@
 6. [Performance Evolution](#6-performance-evolution)
 7. [Key Tradeoffs & Challenges](#7-key-tradeoffs--challenges)
 8. [Future Improvements](#8-future-improvements) 
-9. [Demo Commands](#9-demo-commands)
 
 ---
 
@@ -27,7 +26,7 @@ Users building AI workflows struggle to configure integration actions (API wrapp
 - Users must read external API docs to understand required fields
 - Variable formatting and Liquid templating syntax is error-prone
 
-### Our Solution
+### The Solution
 
 An **Agentic RAG** system that:
 1. **Understands natural language** — "Post the summary to Slack"
@@ -35,7 +34,7 @@ An **Agentic RAG** system that:
 3. **Retrieves accurate API documentation** using agent-driven retrieval with **12 curated API docs**
 4. **Generates valid Liquid-templated configurations** that render to API-ready JSON
 
-> **Why Agentic RAG?** Unlike traditional RAG (query → retrieve → generate), our agent *decides* when and what to retrieve. The LLM orchestrates multiple tool calls, reasoning about information needs before each retrieval step.
+> **Why Agentic RAG?** Unlike traditional RAG (query → retrieve → generate), this agent *decides* when and what to retrieve. The LLM orchestrates multiple tool calls, reasoning about information needs before each retrieval step.
 
 ### Key Output Format
 
@@ -280,7 +279,7 @@ def retrieve_api_documentation(action_id: str) -> str:
 
 📁 **File**: [`src/vector_store.py`](src/vector_store.py)
 
-We use **ChromaDB** to store and retrieve API documentation chunks:
+ChromaDB is used to store and retrieve API documentation chunks:
 
 ```python
 class VectorStore:
@@ -305,7 +304,7 @@ class VectorStore:
         )
 ```
 
-**API Documentation Coverage**: We curated detailed docs for all 13 integrations:
+**API Documentation Coverage**: Detailed docs for all 13 integrations:
 
 | Integration | File | Key Endpoints |
 |-------------|------|---------------|
@@ -377,7 +376,7 @@ Example 2 - GitHub Issue (string interpolation):
 
 📁 **File**: [`src/models.py`](src/models.py), [`src/agent.py`](src/agent.py)
 
-We use a **hybrid approach** for deterministic output:
+A **hybrid approach** for deterministic output:
 1. **ReAct agent** for tool calling (action/documentation retrieval)
 2. **Structured output** for final response generation (deterministic, validated)
 
@@ -421,7 +420,7 @@ class IntegrationAgent:
 
 📁 **File**: [`tests/eval_harness.py`](tests/eval_harness.py)
 
-We built the **evaluation harness first** (before the agent) to track performance from day one:
+The **evaluation harness was built first** (before the agent) to track performance from day one:
 
 ```python
 class EvalHarness:
@@ -453,7 +452,7 @@ class EvalHarness:
 |--------|-------------|----------------|
 | **Action Accuracy** | % of correct action selections | **100%** (12/12) |
 | **Liquid Valid** | % with valid Liquid template syntax | **100%** |
-| **Renders to JSON** | % that render to valid JSON | **100%** ✅ |
+| **Renders to JSON** | % that render to valid JSON | **100%** |
 | **Avg Latency** | Time per request | ~40s |
 | **Error Rate** | % of failed requests | **0%** |
 
@@ -526,7 +525,7 @@ python cli.py --json -f examples/slack_message.json "Post the summary to Slack"
 
 ### 5.2 Agent Tracing
 
-When `--debug` is enabled, we see the full agent trace:
+When `--debug` is enabled, the full agent trace is shown:
 
 ```
 🔧 Initializing...
@@ -607,7 +606,7 @@ on:
 | Renders to JSON | 100% | 100% | = |
 
 **What Changed**: Moved from mock agent (keyword matching) to real LLM agent  
-**Problem Discovered**: The LLM was generating responses that exceeded token limits, and `proposed_config` (being last in the JSON) got truncated. This was NOT a bug in our code—the OpenAI API was cutting off long responses.
+**Problem Discovered**: The LLM was generating responses that exceeded token limits, and `proposed_config` (being last in the JSON) got truncated. This was NOT a bug in the code—the OpenAI API was cutting off long responses.
 
 📁 **Evidence**: See [`results/eval_real_v1.json`](results/eval_real_v1.json) (scenario 2) - raw output ends with `"...The configuration is a Liquid template t"` (cut off mid-sentence!)
 
@@ -624,11 +623,11 @@ on:
 | Avg Latency | 40.7s | 20.4s | ↑ 2x faster |
 
 **What Changed**: Added `_extract_field()` regex fallback for truncated JSON  
-**Improvement**: Even if JSON is incomplete, we can extract `selected_action` correctly
+**Improvement**: Even if JSON is incomplete, `selected_action` can be extracted correctly
 
 **Why Renders to JSON dropped**: An ironic side effect! In v1, parse failures returned `{}` (valid JSON). In v2, the regex fallback extracted the *actual* truncated `proposed_config` value.
 
-📁 **Smoking Gun**: See [`results/eval_real_v2.json`](results/eval_real_v2.json) (scenario 2):
+📁 **Evidence**: See [`results/eval_real_v2.json`](results/eval_real_v2.json) (scenario 2):
 ```json
 "actual_action": "github_create_issue",  // ✅ Regex fallback worked!
 "proposed_config": "{ \\",               // ❌ Severely truncated - not valid JSON
@@ -847,92 +846,9 @@ Consider migrating from LangGraph to Vercel AI SDK:
 
 ---
 
-## 9. Demo Commands
+## Results
 
-### Quick Start
-
-```bash
-# Activate environment
-source venv/bin/activate
-
-# Run a simple request
-python cli.py "Post the summary to Slack"
-
-# With context variables
-python cli.py --context '{"summary": "Test", "slack_channel": "#alerts"}' "Post to Slack"
-
-# JSON output
-python cli.py --json "Create a GitHub issue for the error"
-
-# Use example file (with explicit request)
-python cli.py --json -f examples/slack_message.json "Post the summary to Slack"
-
-# Use example file (request auto-loaded from file's user_input)
-python cli.py --json -f examples/slack_message.json
-
-# 🔍 DEBUG MODE - Shows agent thinking
-python cli.py --debug -f examples/slack_message.json
-```
-
-### Test All Integrations
-
-```bash
-# All scenarios (user_input auto-loaded from files)
-python cli.py --json -f examples/slack_message.json
-python cli.py --json -f examples/github_issue.json
-python cli.py --json -f examples/sheets_create.json
-python cli.py --json -f examples/sheets_append.json
-python cli.py --json -f examples/notion_page.json
-python cli.py --json -f examples/notion_block_update.json
-python cli.py --json -f examples/airtable_record.json
-python cli.py --json -f examples/hubspot_contact.json
-python cli.py --json -f examples/trello_card.json
-python cli.py --json -f examples/jira_issue.json
-python cli.py --json -f examples/stripe_customer.json
-python cli.py --json -f examples/sendgrid_email.json
-python cli.py --json -f examples/twilio_sms.json
-```
-
-### Run Tests & Evaluations
-
-```bash
-# All unit tests
-python -m pytest tests/ -v --ignore=tests/eval_harness.py
-
-# Run full evaluation (12 scenarios)
-python tests/eval_harness.py --real --verbose
-
-# Compare evaluations
-python tests/eval_harness.py --compare results/eval_baseline_4actions.json results/eval_full_12scenarios.json
-```
-
-### Example Output
-
-```json
-{
-  "selected_action": "hubspot_create_contact",
-  "reasoning": "The user wants to add a lead as a HubSpot contact. The 'hubspot_create_contact' action is explicitly designed to create contacts in HubSpot. Using the API docs, the payload must include a 'properties' object with standard fields. I mapped the provided lead variables to HubSpot contact properties (email, firstname, lastname, phone, company, jobtitle) and set lifecyclestage to 'lead' to reflect the request.",
-  "proposed_config": "{ \"properties\": { \"email\": \"{{ lead.email }}\", \"firstname\": \"{{ lead.first_name }}\", \"lastname\": \"{{ lead.last_name }}\", \"phone\": \"{{ lead.phone }}\", \"company\": \"{{ lead.company }}\", \"jobtitle\": \"{{ lead.job_title }}\", \"lifecyclestage\": \"lead\" } }"
-}
-```
-
----
-
-## Summary
-
-| Requirement | Implementation | Status |
-|-------------|----------------|--------|
-| Accept natural language + context | CLI with `--context` flag and `-f` for files | ✅ |
-| Select correct integration action | 100% accuracy on 12 test scenarios | ✅ |
-| Support all 13 integrations | 12 API docs covering all actions | ✅ |
-| Retrieve accurate payload structure | Agentic RAG with ChromaDB + curated docs | ✅ |
-| Generate Liquid-templated config | Valid Liquid that renders to JSON | ✅ |
-| Evaluation strategy | Eval harness with 5 metrics, 12 scenarios | ✅ |
-| Observability/debugging | Debug mode, git-tracked results | ✅ |
-| Performance evolution tracking | Baseline → Full comparison available | ✅ |
-| Test case outputs | 13 output files in `examples/outputs/` | ✅ |
-
-**Final Results**:
+**Final Performance**:
 - **13 integration actions** fully supported
 - **100% action accuracy** across all 12 test scenarios
 - **12 API documentation files** indexed in ChromaDB
@@ -941,4 +857,4 @@ python tests/eval_harness.py --compare results/eval_baseline_4actions.json resul
 
 ---
 
-*Built with LangGraph, ChromaDB, GPT-5, and ❤️*
+*Built with LangGraph, ChromaDB, GPT-5, and Python*
